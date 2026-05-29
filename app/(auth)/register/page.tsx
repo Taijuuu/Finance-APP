@@ -16,9 +16,12 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const result = await register(new FormData(e.currentTarget))
-    if (result?.error) {
-      setError(result.error)
+    try {
+      const result = await register(new FormData(e.currentTarget))
+      if (result?.error) setError(result.error)
+    } catch {
+      setError('Une erreur inattendue est survenue.')
+    } finally {
       setLoading(false)
     }
   }
@@ -41,7 +44,7 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Mot de passe</Label>
-            <Input id="password" name="password" type="password" required minLength={6} autoComplete="new-password" />
+            <Input id="password" name="password" type="password" required autoComplete="new-password" />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>

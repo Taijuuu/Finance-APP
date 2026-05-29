@@ -16,9 +16,12 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const result = await login(new FormData(e.currentTarget))
-    if (result?.error) {
-      setError(result.error)
+    try {
+      const result = await login(new FormData(e.currentTarget))
+      if (result?.error) setError(result.error)
+    } catch {
+      setError('Une erreur inattendue est survenue.')
+    } finally {
       setLoading(false)
     }
   }
