@@ -128,3 +128,19 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  .card-hover {
+    @apply transition-transform transition-shadow duration-200;
+  }
+  .card-hover:hover {
+    @apply -translate-y-0.5 shadow-md;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
