@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Sidebar } from '@/components/app/Sidebar'
 import { BottomNav } from '@/components/app/BottomNav'
 import { MobileFab } from '@/components/app/MobileFab'
+import { InstallBanner } from '@/components/app/InstallBanner'
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </main>
       <BottomNav />
       <MobileFab />
+      <InstallBanner />
     </div>
   )
 }
