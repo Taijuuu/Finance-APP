@@ -24,7 +24,7 @@ export interface Database {
       recurring_transactions: {
         Row: { id: string; user_id: string; name: string; amount: number; type: 'expense' | 'income'; category_id: string | null; frequency: 'weekly' | 'monthly' | 'yearly'; start_date: string; last_generated: string | null; is_active: boolean; created_at: string }
         Insert: { user_id: string; name: string; amount: number; type: 'expense' | 'income'; category_id?: string | null; frequency: 'weekly' | 'monthly' | 'yearly'; start_date: string; is_active?: boolean }
-        Update: { name?: string; amount?: number; type?: 'expense' | 'income'; category_id?: string | null; frequency?: 'weekly' | 'monthly' | 'yearly'; start_date?: string; is_active?: boolean }
+        Update: { name?: string; amount?: number; type?: 'expense' | 'income'; category_id?: string | null; frequency?: 'weekly' | 'monthly' | 'yearly'; start_date?: string; last_generated?: string | null; is_active?: boolean }
         Relationships: []
       }
       budgets: {
