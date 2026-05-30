@@ -9,8 +9,9 @@ import { createTransaction, updateTransaction } from '@/app/actions/transactions
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
 type Transaction = Database['public']['Tables']['transactions']['Row']
@@ -45,6 +46,17 @@ export function TransactionForm({ transaction, categories, onSuccess }: Props) {
   }, [transaction, reset])
 
   const selectedType = watch('type')
+  const selectedCategoryId = watch('category_id')
+
+  // Clear category when type changes and selected category no longer matches
+  useEffect(() => {
+    if (selectedCategoryId) {
+      const cat = categories.find(c => c.id === selectedCategoryId)
+      if (cat && cat.type !== selectedType && cat.type !== 'both') {
+        setValue('category_id', undefined)
+      }
+    }
+  }, [selectedType, selectedCategoryId, categories, setValue])
 
   async function onSubmit(data: TransactionInput) {
     try {
@@ -60,6 +72,7 @@ export function TransactionForm({ transaction, categories, onSuccess }: Props) {
   }
 
   const filteredCategories = categories.filter(c => c.type === selectedType || c.type === 'both')
+  const selectedCategory = categories.find(c => c.id === selectedCategoryId)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -67,7 +80,11 @@ export function TransactionForm({ transaction, categories, onSuccess }: Props) {
         <div className="space-y-2">
           <Label>Type</Label>
           <Select value={selectedType} onValueChange={v => setValue('type', v as 'expense' | 'income')}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full">
+              <span className="flex-1 text-left text-sm">
+                {selectedType === 'expense' ? 'Dépense' : 'Revenu'}
+              </span>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="expense">Dépense</SelectItem>
               <SelectItem value="income">Revenu</SelectItem>
@@ -80,13 +97,18 @@ export function TransactionForm({ transaction, categories, onSuccess }: Props) {
           {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
         </div>
       </div>
+
       <div className="space-y-2">
         <Label>Catégorie</Label>
         <Select
-          defaultValue={transaction?.category_id ?? undefined}
-          onValueChange={v => setValue('category_id', v)}
+          value={selectedCategoryId ?? ''}
+          onValueChange={v => setValue('category_id', v || undefined)}
         >
-          <SelectTrigger><SelectValue placeholder="Choisir une catégorie" /></SelectTrigger>
+          <SelectTrigger className="w-full">
+            <span className={cn('flex-1 text-left text-sm truncate', !selectedCategoryId && 'text-muted-foreground')}>
+              {selectedCategory?.name ?? 'Choisir une catégorie'}
+            </span>
+          </SelectTrigger>
           <SelectContent>
             {filteredCategories.map(c => (
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -94,15 +116,18 @@ export function TransactionForm({ transaction, categories, onSuccess }: Props) {
           </SelectContent>
         </Select>
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="date">Date</Label>
         <Input id="date" type="date" {...register('date')} />
         {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" rows={2} {...register('description')} />
       </div>
+
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? 'Enregistrement...' : isEdit ? 'Mettre à jour' : 'Ajouter'}
       </Button>
