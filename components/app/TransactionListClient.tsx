@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
-import { deleteTransaction } from '@/app/actions/transactions'
+import { deleteTransaction, deleteAllTransactions } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,16 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
       const result = await deleteTransaction(id)
       if (result.error) toast.error(result.error)
       else toast.success('Transaction supprimée')
+    } catch {
+      toast.error('Une erreur inattendue est survenue.')
+    }
+  }
+
+  async function handleDeleteAll() {
+    try {
+      const result = await deleteAllTransactions()
+      if (result.error) toast.error(result.error)
+      else { toast.success('Toutes les transactions ont été supprimées'); router.refresh() }
     } catch {
       toast.error('Une erreur inattendue est survenue.')
     }
@@ -90,6 +100,30 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
         <Button onClick={openCreate} size="sm" className="ml-auto">
           <Plus size={14} className="mr-1" /> Ajouter
         </Button>
+        <AlertDialog>
+          <AlertDialogTrigger
+            render={<Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10" />}
+          >
+            <Trash2 size={16} />
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer toutes les transactions ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action supprimera définitivement toutes vos transactions et réinitialisera le dashboard. Cette action est irréversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={handleDeleteAll}
+              >
+                Tout supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="rounded-xl border overflow-hidden">
