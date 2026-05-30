@@ -26,6 +26,7 @@ export async function getTransactions(params: {
     .from('transactions')
     .select('*, categories(id, name, icon_name, color)', { count: 'exact' })
     .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
 
   if (month) {
     const [year, m] = month.split('-').map(Number)
