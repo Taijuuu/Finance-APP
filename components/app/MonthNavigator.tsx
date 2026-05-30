@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -11,16 +11,12 @@ interface Props {
 
 export function MonthNavigator({ year, month }: Props) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
 
   function navigate(offsetMonths: number) {
     const d = new Date(year, month - 1 + offsetMonths, 1)
     const y = d.getFullYear()
     const m = d.getMonth() + 1
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('month', `${y}-${String(m).padStart(2, '0')}`)
-    router.push(`${pathname}?${params.toString()}`)
+    router.push(`/dashboard?month=${y}-${String(m).padStart(2, '0')}`)
   }
 
   const isCurrentMonth = (() => {
