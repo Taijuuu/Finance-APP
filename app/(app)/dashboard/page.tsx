@@ -87,6 +87,7 @@ async function getDashboardData(year: number, month: number) {
     .from('transactions')
     .select('*, categories(id, name, icon_name, color)')
     .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
     .gte('date', start)
     .lte('date', end)
     .order('date', { ascending: false })
