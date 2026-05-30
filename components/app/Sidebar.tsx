@@ -43,7 +43,7 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-56 border-r bg-background h-screen fixed left-0 top-0 z-40">
       <div className="px-4 py-5 border-b">
-        <span className="text-sm font-bold tracking-widest uppercase text-foreground">FinanceApp</span>
+        <Link href="/dashboard" className="text-sm font-bold tracking-widest uppercase text-foreground hover:text-primary transition-colors">FinanceApp</Link>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {primaryNav.map(item => <NavLink key={item.href} {...item} />)}

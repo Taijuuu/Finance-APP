@@ -6,16 +6,27 @@ import { CategoryDonutChart } from '@/components/charts/CategoryDonutChart'
 import { BalanceLineChart } from '@/components/charts/BalanceLineChart'
 import { CategoryBadge } from '@/components/app/CategoryBadge'
 import { ChartSkeleton } from '@/components/app/Skeletons'
+import { MonthNavigator } from '@/components/app/MonthNavigator'
 import { formatCurrency, formatDate, savingsRate, getMonthRange } from '@/lib/utils'
 
-async function getDashboardData() {
+interface Props {
+  searchParams: Promise<{ month?: string }>
+}
+
+function parseMonth(monthParam?: string): { year: number; month: number } {
+  if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+    const [y, m] = monthParam.split('-').map(Number)
+    return { year: y, month: m }
+  }
+  const now = new Date()
+  return { year: now.getFullYear(), month: now.getMonth() + 1 }
+}
+
+async function getDashboardData(year: number, month: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
   const { start, end } = getMonthRange(year, month)
 
   const { data: currentMonth } = await supabase
@@ -77,6 +88,8 @@ async function getDashboardData() {
     .from('transactions')
     .select('*, categories(id, name, icon_name, color)')
     .eq('user_id', user.id)
+    .gte('date', start)
+    .lte('date', end)
     .order('date', { ascending: false })
     .limit(5)
   const recent = recentRaw as RecentRow[] | null
@@ -103,8 +116,11 @@ async function getDashboardData() {
   return { income, expenses, barData, donutData, lineData, recent: (recent ?? []) as RecentRow[], alerts, savings: savingsRate(income, expenses) }
 }
 
-export default async function DashboardPage() {
-  const data = await getDashboardData()
+export default async function DashboardPage({ searchParams }: Props) {
+  const params = await searchParams
+  const { year, month } = parseMonth(params.month)
+
+  const data = await getDashboardData(year, month)
   if (!data) return <p>Erreur de chargement</p>
   const { income, expenses, barData, donutData, lineData, recent, alerts, savings } = data
   const balance = income - expenses
@@ -112,11 +128,9 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <DashboardRecurringTrigger />
-      <div>
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(new Date())}
-        </p>
+        <MonthNavigator year={year} month={month} />
       </div>
 
       {alerts.length > 0 && (
@@ -165,7 +179,7 @@ export default async function DashboardPage() {
               </span>
             </div>
           ))}
-          {recent.length === 0 && <p className="text-center text-muted-foreground text-sm py-8">Aucune transaction</p>}
+          {recent.length === 0 && <p className="text-center text-muted-foreground text-sm py-8">Aucune transaction ce mois</p>}
         </div>
       </div>
     </div>

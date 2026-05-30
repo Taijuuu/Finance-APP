@@ -50,7 +50,7 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
   function setParam(key: string, value: string | undefined) {
     const params = new URLSearchParams(searchParams as Record<string, string>)
     if (value) params.set(key, value); else params.delete(key)
-    params.delete('page')
+    if (key !== 'page') params.delete('page')
     router.push(`${pathname}?${params.toString()}`)
   }
 
