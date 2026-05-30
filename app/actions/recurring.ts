@@ -42,6 +42,13 @@ export async function updateRecurring(id: string, input: unknown) {
   if (!user) return { error: 'Non authentifié' }
   const parsed = recurringSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
+  const today = new Date().toISOString().split('T')[0]
+  // Delete future pre-generated instances so they get regenerated with new params
+  await supabase.from('transactions')
+    .delete()
+    .eq('recurring_id', id)
+    .eq('user_id', user.id)
+    .gt('date', today)
   const { error } = await supabase.from('recurring_transactions').update({
     name: parsed.data.name,
     amount: parsed.data.amount,
@@ -49,9 +56,11 @@ export async function updateRecurring(id: string, input: unknown) {
     category_id: parsed.data.category_id ?? null,
     frequency: parsed.data.frequency,
     start_date: parsed.data.start_date,
+    last_generated: null,
   }).eq('id', id).eq('user_id', user.id)
   if (error) return { error: error.message }
   revalidatePath('/recurring')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 
@@ -69,8 +78,16 @@ export async function deleteRecurring(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié' }
+  const today = new Date().toISOString().split('T')[0]
+  // Remove future pre-generated instances before deleting the recurring
+  await supabase.from('transactions')
+    .delete()
+    .eq('recurring_id', id)
+    .eq('user_id', user.id)
+    .gt('date', today)
   const { error } = await supabase.from('recurring_transactions').delete().eq('id', id).eq('user_id', user.id)
   if (error) return { error: error.message }
   revalidatePath('/recurring')
+  revalidatePath('/dashboard')
   return { success: true }
 }

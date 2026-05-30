@@ -20,9 +20,9 @@ function toDateStr(d: Date): string {
 
 export function computeMissingOccurrences(
   params: RecurringParams,
-  today: Date = new Date()
+  upTo: Date = new Date()
 ): string[] {
-  const todayStr = toDateStr(today)
+  const todayStr = toDateStr(upTo)
 
   let next: Date
   if (params.last_generated) {

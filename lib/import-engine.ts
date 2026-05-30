@@ -27,14 +27,34 @@ export function parseAmount(raw: string | number, positiveIsExpense: boolean): {
   return { amount: Math.abs(n), type: isExpense ? 'expense' : 'income' }
 }
 
-export function parseRowDate(raw: string, format: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'ISO'): string {
-  if (format === 'ISO') {
-    const d = new Date(raw)
-    if (isNaN(d.getTime())) throw new Error(`Date invalide: ${raw}`)
+// Excel serial date: days since 1900-01-01 (with Lotus 1-2-3 leap year bug)
+function excelSerialToDate(serial: number): Date {
+  const MS_PER_DAY = 86400000
+  const EXCEL_EPOCH = new Date(Date.UTC(1899, 11, 30))
+  return new Date(EXCEL_EPOCH.getTime() + serial * MS_PER_DAY)
+}
+
+export function parseRowDate(raw: string | number | Date, format: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'ISO'): string {
+  // JS Date object (from xlsx cellDates:true)
+  if (raw instanceof Date) {
+    if (isNaN(raw.getTime())) throw new Error('Date invalide')
+    return raw.toISOString().split('T')[0]
+  }
+  // Excel serial number
+  if (typeof raw === 'number') {
+    const d = excelSerialToDate(raw)
+    if (isNaN(d.getTime())) throw new Error(`Numéro de date invalide: ${raw}`)
     return d.toISOString().split('T')[0]
   }
-  const parts = raw.split(/[\/\-]/)
-  if (parts.length !== 3) throw new Error(`Format date invalide: ${raw}`)
+  // String
+  const str = String(raw).trim()
+  if (format === 'ISO') {
+    const d = new Date(str)
+    if (isNaN(d.getTime())) throw new Error(`Date invalide: ${str}`)
+    return d.toISOString().split('T')[0]
+  }
+  const parts = str.split(/[\/\-\.]/)
+  if (parts.length !== 3) throw new Error(`Format date invalide: ${str}`)
   const [a, b, c] = parts
   if (format === 'DD/MM/YYYY') return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`
   return `${c}-${a.padStart(2, '0')}-${b.padStart(2, '0')}`

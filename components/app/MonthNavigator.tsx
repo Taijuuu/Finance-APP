@@ -19,9 +19,11 @@ export function MonthNavigator({ year, month }: Props) {
     router.push(`/dashboard?month=${y}-${String(m).padStart(2, '0')}`)
   }
 
-  const isCurrentMonth = (() => {
-    const now = new Date()
-    return year === now.getFullYear() && month === now.getMonth() + 1
+  const isAtHorizon = (() => {
+    const horizon = new Date()
+    horizon.setMonth(horizon.getMonth() + 12)
+    return year > horizon.getFullYear() ||
+      (year === horizon.getFullYear() && month >= horizon.getMonth() + 1)
   })()
 
   const label = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1))
@@ -32,7 +34,7 @@ export function MonthNavigator({ year, month }: Props) {
         <ChevronLeft size={16} />
       </Button>
       <span className="text-sm text-muted-foreground min-w-[130px] text-center capitalize">{label}</span>
-      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(1)} disabled={isCurrentMonth}>
+      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(1)} disabled={isAtHorizon}>
         <ChevronRight size={16} />
       </Button>
     </div>

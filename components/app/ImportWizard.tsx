@@ -35,7 +35,8 @@ export function ImportWizard({ categories }: Props) {
       const data = new Uint8Array(e.target!.result as ArrayBuffer)
       const wb = read(data, { type: 'array' })
       const ws = wb.Sheets[wb.SheetNames[0]]
-      const parsed: Record<string, unknown>[] = utils.sheet_to_json(ws, { defval: '' })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const parsed: Record<string, unknown>[] = utils.sheet_to_json(ws, { defval: '', cellDates: true } as any)
       if (parsed.length === 0) { toast.error('Fichier vide'); return }
       const hdrs = Object.keys(parsed[0])
       setHeaders(hdrs)
@@ -69,7 +70,7 @@ export function ImportWizard({ categories }: Props) {
 
     const rawRows = rows.map(r => ({
       rawAmount: r[amountCol],
-      rawDate: String(r[dateCol]),
+      rawDate: r[dateCol] as string | number | Date,
       description: descCol ? String(r[descCol] ?? '') : '',
     }))
 
@@ -79,7 +80,7 @@ export function ImportWizard({ categories }: Props) {
     for (const r of rawRows) {
       try {
         const { amount, type } = parseAmount(r.rawAmount as string | number, positiveIsExpense)
-        const date = parseRowDate(r.rawDate, dateFormat)
+        const date = parseRowDate(r.rawDate as string | number | Date, dateFormat)
         processed.push({ amount, type, date, description: r.description })
       } catch {
         errors++
