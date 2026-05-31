@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { read, utils } from 'xlsx'
 import { toast } from 'sonner'
 import { Upload, ChevronRight } from 'lucide-react'
@@ -19,6 +20,7 @@ type FieldOption = typeof FIELD_OPTIONS[number]
 interface Props { categories: Category[] }
 
 export function ImportWizard({ categories }: Props) {
+  const router = useRouter()
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [headers, setHeaders] = useState<string[]>([])
   const [rows, setRows] = useState<Record<string, unknown>[]>([])
@@ -117,6 +119,7 @@ export function ImportWizard({ categories }: Props) {
     if (error) { toast.error(error.message); return }
     toast.success(`${toInsert.length} transactions importées`)
     setStep(1); setRows([]); setHeaders([]); setSummary(null)
+    router.refresh()
   }
 
   if (step === 1) return (
