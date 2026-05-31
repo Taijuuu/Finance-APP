@@ -20,11 +20,10 @@ export function detectDuplicates<T extends ImportRow>(
   })
 }
 
-export function parseAmount(raw: string | number, positiveIsExpense: boolean): { amount: number; type: 'expense' | 'income' } {
+export function parseAmount(raw: string | number): { amount: number; type: 'expense' | 'income' } {
   const n = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(',', '.').replace(/\s/g, ''))
   if (isNaN(n)) throw new Error(`Montant invalide: ${raw}`)
-  const isExpense = positiveIsExpense ? n > 0 : n < 0
-  return { amount: Math.abs(n), type: isExpense ? 'expense' : 'income' }
+  return { amount: Math.abs(n), type: n < 0 ? 'expense' : 'income' }
 }
 
 // Excel serial date: days since 1900-01-01 (with Lotus 1-2-3 leap year bug)

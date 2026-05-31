@@ -25,7 +25,6 @@ export function ImportWizard({ categories }: Props) {
   const [headers, setHeaders] = useState<string[]>([])
   const [rows, setRows] = useState<Record<string, unknown>[]>([])
   const [mapping, setMapping] = useState<Record<string, FieldOption>>({})
-  const [positiveIsExpense, setPositiveIsExpense] = useState(true)
   const [dateFormat, setDateFormat] = useState<'DD/MM/YYYY' | 'MM/DD/YYYY' | 'ISO'>('DD/MM/YYYY')
   const [summary, setSummary] = useState<{ toImport: number; duplicates: number; errors: number } | null>(null)
   const [validRows, setValidRows] = useState<{ amount: number; type: 'expense' | 'income'; date: string; description: string }[]>([])
@@ -81,7 +80,7 @@ export function ImportWizard({ categories }: Props) {
     const processed: ParsedRow[] = []
     for (const r of rawRows) {
       try {
-        const { amount, type } = parseAmount(r.rawAmount as string | number, positiveIsExpense)
+        const { amount, type } = parseAmount(r.rawAmount as string | number)
         const date = parseRowDate(r.rawDate as string | number | Date, dateFormat)
         processed.push({ amount, type, date, description: r.description })
       } catch {
@@ -168,16 +167,6 @@ export function ImportWizard({ categories }: Props) {
         ))}
       </div>
       <div className="flex flex-wrap gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Montants positifs =</Label>
-          <Select value={positiveIsExpense ? 'expense' : 'income'} onValueChange={v => setPositiveIsExpense(v === 'expense')}>
-            <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="expense">Dépenses</SelectItem>
-              <SelectItem value="income">Revenus</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Format date</Label>
           <Select value={dateFormat} onValueChange={v => setDateFormat(v as typeof dateFormat)}>
