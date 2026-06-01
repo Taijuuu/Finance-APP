@@ -4,98 +4,97 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { read, utils } from 'xlsx'
 import { toast } from 'sonner'
-import { Upload, ChevronRight } from 'lucide-react'
+import { Upload, Loader2 } from 'lucide-react'
 import { parseAmount, parseRowDate, detectDuplicates, computeImportHash } from '@/lib/import-engine'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
 import type { Database } from '@/types/database'
 
 type Category = Database['public']['Tables']['categories']['Row']
-
-const FIELD_OPTIONS = ['montant', 'date', 'description', 'catégorie', 'ignorer'] as const
-type FieldOption = typeof FIELD_OPTIONS[number]
+type FieldOption = 'montant' | 'date' | 'description' | 'ignorer'
+type ParsedRow = { amount: number; type: 'expense' | 'income'; date: string; description: string }
 
 interface Props { categories: Category[] }
 
+function autoDetectDateFormat(sample: string): 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'ISO' {
+  if (/^\d{4}-\d{2}-\d{2}/.test(sample)) return 'ISO'
+  const parts = sample.split(/[\/\-\.]/)
+  if (parts.length === 3 && Number(parts[0]) > 12) return 'DD/MM/YYYY'
+  return 'DD/MM/YYYY'
+}
+
 export function ImportWizard({ categories }: Props) {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [headers, setHeaders] = useState<string[]>([])
-  const [rows, setRows] = useState<Record<string, unknown>[]>([])
-  const [mapping, setMapping] = useState<Record<string, FieldOption>>({})
-  const [dateFormat, setDateFormat] = useState<'DD/MM/YYYY' | 'MM/DD/YYYY' | 'ISO'>('DD/MM/YYYY')
+  const [step, setStep] = useState<1 | 3>(1)
+  const [processing, setProcessing] = useState(false)
   const [summary, setSummary] = useState<{ toImport: number; duplicates: number; errors: number } | null>(null)
-  const [validRows, setValidRows] = useState<{ amount: number; type: 'expense' | 'income'; date: string; description: string }[]>([])
+  const [validRows, setValidRows] = useState<ParsedRow[]>([])
   const [importing, setImporting] = useState(false)
 
-  const handleFile = useCallback((file: File) => {
-    const reader = new FileReader()
-    reader.onload = e => {
-      const data = new Uint8Array(e.target!.result as ArrayBuffer)
-      const wb = read(data, { type: 'array' })
+  const handleFile = useCallback(async (file: File) => {
+    setProcessing(true)
+    try {
+      const buffer = await file.arrayBuffer()
+      const wb = read(new Uint8Array(buffer), { type: 'array' })
       const ws = wb.Sheets[wb.SheetNames[0]]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const parsed: Record<string, unknown>[] = utils.sheet_to_json(ws, { defval: '', cellDates: true } as any)
-      if (parsed.length === 0) { toast.error('Fichier vide'); return }
+      if (parsed.length === 0) { toast.error('Fichier vide'); setProcessing(false); return }
+
       const hdrs = Object.keys(parsed[0])
-      setHeaders(hdrs)
-      setRows(parsed)
-      const autoMapping: Record<string, FieldOption> = {}
+      const mapping: Record<string, FieldOption> = {}
       hdrs.forEach(h => {
         const lower = h.toLowerCase()
-        if (lower.includes('mont') || lower.includes('amount')) autoMapping[h] = 'montant'
-        else if (lower.includes('date')) autoMapping[h] = 'date'
-        else if (lower.includes('desc') || lower.includes('lib')) autoMapping[h] = 'description'
-        else autoMapping[h] = 'ignorer'
+        if (lower.includes('mont') || lower.includes('amount')) mapping[h] = 'montant'
+        else if (lower.includes('date')) mapping[h] = 'date'
+        else if (lower.includes('desc') || lower.includes('lib')) mapping[h] = 'description'
+        else mapping[h] = 'ignorer'
       })
-      setMapping(autoMapping)
-      setStep(2)
-    }
-    reader.readAsArrayBuffer(file)
-  }, [])
 
-  async function handleValidate() {
-    const amountCol = Object.entries(mapping).find(([, v]) => v === 'montant')?.[0]
-    const dateCol = Object.entries(mapping).find(([, v]) => v === 'date')?.[0]
-    const descCol = Object.entries(mapping).find(([, v]) => v === 'description')?.[0]
-    if (!amountCol || !dateCol) { toast.error('Colonne montant et date requises'); return }
+      const amountCol = Object.entries(mapping).find(([, v]) => v === 'montant')?.[0]
+      const dateCol = Object.entries(mapping).find(([, v]) => v === 'date')?.[0]
+      const descCol = Object.entries(mapping).find(([, v]) => v === 'description')?.[0]
 
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+      if (!amountCol || !dateCol) { toast.error('Colonnes montant/date introuvables dans le fichier'); setProcessing(false); return }
 
-    const { data: existing } = await supabase.from('transactions').select('date, amount, description').eq('user_id', user.id)
-    const existingHashes = (existing ?? []).map(t => computeImportHash(t.date, Number(t.amount), t.description ?? ''))
+      const firstDateVal = parsed.find(r => r[dateCol])?.[dateCol]
+      const dateFormat = firstDateVal instanceof Date || typeof firstDateVal === 'number'
+        ? 'ISO'
+        : autoDetectDateFormat(String(firstDateVal ?? ''))
 
-    const rawRows = rows.map(r => ({
-      rawAmount: r[amountCol],
-      rawDate: r[dateCol] as string | number | Date,
-      description: descCol ? String(r[descCol] ?? '') : '',
-    }))
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setProcessing(false); return }
 
-    type ParsedRow = { amount: number; type: 'expense' | 'income'; date: string; description: string }
-    let errors = 0
-    const processed: ParsedRow[] = []
-    for (const r of rawRows) {
-      try {
-        const { amount, type } = parseAmount(r.rawAmount as string | number)
-        const date = parseRowDate(r.rawDate as string | number | Date, dateFormat)
-        processed.push({ amount, type, date, description: r.description })
-      } catch {
-        errors++
+      const { data: existing } = await supabase.from('transactions').select('date, amount, description').eq('user_id', user.id)
+      const existingHashes = (existing ?? []).map(t => computeImportHash(t.date, Number(t.amount), t.description ?? ''))
+
+      let errors = 0
+      const processed: ParsedRow[] = []
+      for (const r of parsed) {
+        try {
+          const { amount, type } = parseAmount(r[amountCol] as string | number)
+          const date = parseRowDate(r[dateCol] as string | number | Date, dateFormat)
+          const description = descCol ? String(r[descCol] ?? '') : ''
+          processed.push({ amount, type, date, description })
+        } catch {
+          errors++
+        }
       }
+
+      const withDupes = detectDuplicates(processed, existingHashes)
+      const toImport = withDupes.filter(r => !r.isDuplicate) as ParsedRow[]
+      const duplicates = withDupes.filter(r => r.isDuplicate).length
+
+      setValidRows(toImport)
+      setSummary({ toImport: toImport.length, duplicates, errors })
+      setStep(3)
+    } catch {
+      toast.error('Erreur lors de la lecture du fichier')
+    } finally {
+      setProcessing(false)
     }
-
-    const withDupes = detectDuplicates(processed, existingHashes)
-    const toImport = withDupes.filter(r => !r.isDuplicate)
-    const duplicates = withDupes.filter(r => r.isDuplicate).length
-
-    setValidRows(toImport as { amount: number; type: 'expense' | 'income'; date: string; description: string }[])
-    setSummary({ toImport: toImport.length, duplicates, errors })
-    setStep(3)
-  }
+  }, [])
 
   async function handleImport() {
     setImporting(true)
@@ -117,69 +116,23 @@ export function ImportWizard({ categories }: Props) {
     setImporting(false)
     if (error) { toast.error(error.message); return }
     toast.success(`${toInsert.length} transactions importées`)
-    setStep(1); setRows([]); setHeaders([]); setSummary(null)
+    setStep(1); setSummary(null); setValidRows([])
     router.refresh()
   }
 
   if (step === 1) return (
     <div
-      className="border-2 border-dashed rounded-xl p-12 text-center cursor-pointer hover:border-primary transition-colors"
+      className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${processing ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:border-primary'}`}
       onDragOver={e => e.preventDefault()}
-      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
-      onClick={() => document.getElementById('file-input')?.click()}
+      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && !processing) handleFile(f) }}
+      onClick={() => !processing && document.getElementById('file-input')?.click()}
     >
-      <Upload size={32} className="mx-auto text-muted-foreground mb-3" />
-      <p className="text-sm font-medium">Déposez un fichier .xlsx ou .csv</p>
-      <p className="text-xs text-muted-foreground mt-1">ou cliquez pour choisir</p>
+      {processing
+        ? <Loader2 size={32} className="mx-auto text-muted-foreground mb-3 animate-spin" />
+        : <Upload size={32} className="mx-auto text-muted-foreground mb-3" />}
+      <p className="text-sm font-medium">{processing ? 'Analyse en cours...' : 'Déposez un fichier .xlsx ou .csv'}</p>
+      {!processing && <p className="text-xs text-muted-foreground mt-1">ou cliquez pour choisir</p>}
       <input id="file-input" type="file" accept=".xlsx,.csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
-    </div>
-  )
-
-  if (step === 2) return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">Mapper les colonnes</h2>
-        <span className="text-sm text-muted-foreground">({rows.length} lignes détectées)</span>
-      </div>
-      <div className="rounded-xl border overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40">
-            <tr>{headers.map(h => <th key={h} className="px-4 py-2 text-left font-medium text-xs">{h}</th>)}</tr>
-          </thead>
-          <tbody>
-            {rows.slice(0, 3).map((row, i) => (
-              <tr key={i} className="border-t">
-                {headers.map(h => <td key={h} className="px-4 py-2 text-muted-foreground truncate max-w-32">{String(row[h] ?? '')}</td>)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {headers.map(h => (
-          <div key={h} className="space-y-1.5">
-            <Label className="text-xs">{h}</Label>
-            <Select value={mapping[h]} onValueChange={v => setMapping(m => ({ ...m, [h]: v as FieldOption }))}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{FIELD_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Format date</Label>
-          <Select value={dateFormat} onValueChange={v => setDateFormat(v as typeof dateFormat)}>
-            <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="DD/MM/YYYY">JJ/MM/AAAA</SelectItem>
-              <SelectItem value="MM/DD/YYYY">MM/JJ/AAAA</SelectItem>
-              <SelectItem value="ISO">ISO (AAAA-MM-JJ)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <Button onClick={handleValidate} className="gap-2">Valider <ChevronRight size={14} /></Button>
     </div>
   )
 
@@ -203,7 +156,7 @@ export function ImportWizard({ categories }: Props) {
         </div>
       )}
       <div className="flex gap-3">
-        <Button variant="outline" onClick={() => setStep(2)}>Retour</Button>
+        <Button variant="outline" onClick={() => { setStep(1); setSummary(null); setValidRows([]) }}>Recommencer</Button>
         <Button onClick={handleImport} disabled={importing || summary?.toImport === 0}>
           {importing ? 'Import en cours...' : `Importer ${summary?.toImport} transactions`}
         </Button>
