@@ -65,31 +65,28 @@ export function CategoryManager({ categories }: Props) {
     else toast.success('Catégorie supprimée')
   }
 
-  const sorted = [...categories].sort((a, b) => {
+  const sortFn = (a: Category, b: Category) => {
     if (a.is_default !== b.is_default) return a.is_default ? 1 : -1
     return a.name.localeCompare(b.name, 'fr')
-  })
+  }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold">Catégories</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{categories.length} catégorie{categories.length > 1 ? 's' : ''}</p>
-        </div>
-        <Button size="sm" onClick={openCreate}><Plus size={14} className="mr-1" />Nouvelle</Button>
-      </div>
+  const incomeCategories = [...categories].filter(c => c.type === 'income' || c.type === 'both').sort(sortFn)
+  const expenseCategories = [...categories].filter(c => c.type === 'expense' || c.type === 'both').sort(sortFn)
 
+  function CategoryList({ items }: { items: Category[] }) {
+    return (
       <div className="rounded-xl border divide-y">
-        {sorted.map(c => (
+        {items.map(c => (
           <div key={c.id} className="flex items-center gap-3 px-4 py-3">
             <CategoryBadge name={c.name} iconName={c.icon_name} color={c.color} size="sm" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{c.name}</p>
+              {c.type === 'both' && (
+                <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', TYPE_COLORS['both'])}>
+                  Les deux
+                </span>
+              )}
             </div>
-            <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full', TYPE_COLORS[c.type])}>
-              {TYPE_LABELS[c.type]}
-            </span>
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openEdit(c)}>
               <Pencil size={13} />
             </Button>
@@ -110,9 +107,38 @@ export function CategoryManager({ categories }: Props) {
             </AlertDialog>
           </div>
         ))}
-        {categories.length === 0 && (
+        {items.length === 0 && (
           <p className="text-center text-muted-foreground text-sm py-8">Aucune catégorie</p>
         )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold">Catégories</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{categories.length} catégorie{categories.length > 1 ? 's' : ''}</p>
+        </div>
+        <Button size="sm" onClick={openCreate}><Plus size={14} className="mr-1" />Nouvelle</Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Revenus</span>
+            <span className="text-xs text-muted-foreground">({incomeCategories.length})</span>
+          </div>
+          <CategoryList items={incomeCategories} />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-rose-500 uppercase tracking-wide">Dépenses</span>
+            <span className="text-xs text-muted-foreground">({expenseCategories.length})</span>
+          </div>
+          <CategoryList items={expenseCategories} />
+        </div>
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
