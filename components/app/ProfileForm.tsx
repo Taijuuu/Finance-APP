@@ -28,16 +28,18 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="full_name">Nom complet</Label>
-        <Input id="full_name" name="full_name" defaultValue={profile?.full_name ?? ''} />
-      </div>
-      <div className="space-y-2">
-        <Label>Devise</Label>
-        <Select name="currency" defaultValue={profile?.currency ?? 'EUR'}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>{CURRENCIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="full_name">Nom complet</Label>
+          <Input id="full_name" name="full_name" defaultValue={profile?.full_name ?? ''} />
+        </div>
+        <div className="space-y-2">
+          <Label>Devise</Label>
+          <Select name="currency" defaultValue={profile?.currency ?? 'EUR'}>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>{CURRENCIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
       </div>
       <Button type="submit" disabled={saving}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Button>
     </form>
