@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { TransactionForm } from './TransactionForm'
 import { getCategories } from '@/app/actions/categories'
 import type { Database } from '@/types/database'
@@ -27,18 +27,16 @@ export function MobileFab() {
       <Button
         onClick={() => setOpen(true)}
         size="icon"
-        className="lg:hidden fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full shadow-lg"
+        className="md:hidden fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full shadow-lg"
       >
         <Plus size={24} />
       </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent>
-          <SheetHeader><SheetTitle>Nouvelle transaction</SheetTitle></SheetHeader>
-          <div className="mt-6">
-            <TransactionForm categories={categories} onSuccess={() => setOpen(false)} />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="w-full max-w-md overflow-y-auto max-h-[90dvh]">
+          <DialogHeader><DialogTitle>Nouvelle transaction</DialogTitle></DialogHeader>
+          <TransactionForm categories={categories} onSuccess={() => setOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
