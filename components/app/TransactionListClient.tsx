@@ -8,7 +8,8 @@ import { deleteTransaction, deleteAllTransactions } from '@/app/actions/transact
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Database } from '@/types/database'
@@ -66,41 +67,52 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <input
-          type="month"
-          className="h-9 rounded-md border px-3 text-sm bg-background"
-          value={searchParams.month ?? ''}
-          onChange={e => setParam('month', e.target.value || undefined)}
-        />
-        <select
-          className="h-9 rounded-md border px-3 text-sm bg-background"
-          value={searchParams.type ?? ''}
-          onChange={e => setParam('type', e.target.value || undefined)}
-        >
-          <option value="">Tous types</option>
-          <option value="expense">Dépenses</option>
-          <option value="income">Revenus</option>
-        </select>
-        <select
-          className="h-9 rounded-md border px-3 text-sm bg-background"
-          value={searchParams.category ?? ''}
-          onChange={e => setParam('category', e.target.value || undefined)}
-        >
-          <option value="">Toutes catégories</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <input
-          type="search"
-          placeholder="Rechercher..."
-          className="h-9 rounded-md border px-3 text-sm bg-background"
-          defaultValue={searchParams.q ?? ''}
-          onKeyDown={e => { if (e.key === 'Enter') setParam('q', (e.target as HTMLInputElement).value || undefined) }}
-        />
-        <Button onClick={openCreate} size="sm" className="ml-auto">
-          <Plus size={14} className="mr-1" /> Ajouter
-        </Button>
-        <AlertDialog>
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="flex flex-wrap gap-2">
+          <input
+            type="month"
+            className="h-9 rounded-md border px-3 text-sm bg-background"
+            value={searchParams.month ?? ''}
+            onChange={e => setParam('month', e.target.value || undefined)}
+          />
+          <Select
+            value={searchParams.type ?? ''}
+            onValueChange={v => setParam('type', (!v || v === '_all') ? undefined : v)}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Tous types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Tous types</SelectItem>
+              <SelectItem value="expense">Dépenses</SelectItem>
+              <SelectItem value="income">Revenus</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={searchParams.category ?? ''}
+            onValueChange={v => setParam('category', (!v || v === '_all') ? undefined : v)}
+          >
+            <SelectTrigger className="flex-1 min-w-0 max-w-48">
+              <SelectValue placeholder="Toutes catégories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Toutes catégories</SelectItem>
+              {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <input
+            type="search"
+            placeholder="Rechercher..."
+            className="h-9 rounded-md border px-3 text-sm bg-background flex-1 min-w-[140px]"
+            defaultValue={searchParams.q ?? ''}
+            onKeyDown={e => { if (e.key === 'Enter') setParam('q', (e.target as HTMLInputElement).value || undefined) }}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={openCreate} size="sm" className="flex-1 sm:flex-none">
+            <Plus size={14} className="mr-1" /> Ajouter
+          </Button>
+          <AlertDialog>
           <AlertDialogTrigger
             render={<Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10" />}
           >
@@ -124,6 +136,7 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </div>
 
       <div className="rounded-xl border overflow-hidden">
@@ -184,20 +197,18 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
         </div>
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{editing ? 'Modifier la transaction' : 'Nouvelle transaction'}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
-            <TransactionForm
-              transaction={editing}
-              categories={categories}
-              onSuccess={() => setSheetOpen(false)}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="sm:max-w-lg overflow-y-auto max-h-[90dvh]">
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Modifier la transaction' : 'Nouvelle transaction'}</DialogTitle>
+          </DialogHeader>
+          <TransactionForm
+            transaction={editing}
+            categories={categories}
+            onSuccess={() => setSheetOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
