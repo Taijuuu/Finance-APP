@@ -15,15 +15,19 @@ const items = [
 export function BottomNav() {
   const pathname = usePathname()
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t h-16 flex items-center">
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t flex items-start pt-2"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
+    >
       {items.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(href + '/')
         return (
           <Link
             key={href}
             href={href}
+            prefetch={true}
             className={cn(
-              'flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
+              'flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors py-1',
               active ? 'text-primary' : 'text-muted-foreground'
             )}
           >

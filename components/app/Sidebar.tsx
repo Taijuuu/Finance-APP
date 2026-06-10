@@ -8,6 +8,7 @@ import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { logout } from '@/app/actions/auth'
+import { InstallButton } from './InstallButton'
 
 const primaryNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -27,6 +28,7 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
   return (
     <Link
       href={href}
+      prefetch={true}
       className={cn(
         'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
         active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -41,7 +43,7 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
 export function Sidebar() {
   const { theme, setTheme } = useTheme()
   return (
-    <aside className="hidden lg:flex flex-col w-56 border-r bg-background h-screen fixed left-0 top-0 z-40">
+    <aside className="hidden md:flex flex-col w-56 border-r bg-background h-screen fixed left-0 top-0 z-40">
       <div className="px-4 py-5 border-b">
         <Link href="/dashboard" className="text-sm font-bold tracking-widest uppercase text-foreground hover:text-primary transition-colors">FinanceApp</Link>
       </div>
@@ -54,6 +56,7 @@ export function Sidebar() {
       </nav>
       <div className="px-3 py-4 border-t space-y-1">
         <NavLink href="/profile" label="Profil" icon={User} />
+        <InstallButton />
         <Button
           variant="ghost"
           size="sm"
