@@ -46,22 +46,11 @@ export function RecurringListClient({ recurrings, categories }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Recurring | null>(null)
 
-  function triggerGeneration() {
-    localStorage.removeItem('recurring-checked')
-    fetch('/api/recurring/generate', { method: 'POST' })
-      .then(r => r.json())
-      .then(() => router.refresh())
-      .catch(() => {})
-  }
-
   async function handleToggle(id: string, current: boolean) {
     try {
       const result = await toggleRecurring(id, !current)
       if (result.error) toast.error(result.error)
-      else {
-        toast.success(!current ? 'Activé' : 'Désactivé')
-        if (!current) triggerGeneration(); else router.refresh()
-      }
+      else { toast.success(!current ? 'Activé' : 'Désactivé'); router.refresh() }
     } catch { toast.error('Une erreur inattendue est survenue.') }
   }
 
@@ -130,7 +119,7 @@ export function RecurringListClient({ recurrings, categories }: Props) {
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
         <DialogContent className="w-full max-w-md overflow-y-auto max-h-[90dvh]">
           <DialogHeader><DialogTitle>{editing ? 'Modifier' : 'Nouvelle transaction récurrente'}</DialogTitle></DialogHeader>
-          <RecurringForm recurring={editing} categories={categories} onSuccess={() => { setSheetOpen(false); triggerGeneration() }} />
+          <RecurringForm recurring={editing} categories={categories} onSuccess={() => { setSheetOpen(false); router.refresh() }} />
         </DialogContent>
       </Dialog>
     </>

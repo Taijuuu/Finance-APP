@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { recurringSchema } from '@/lib/validations/recurring'
 import { revalidatePath } from 'next/cache'
+import { computeMissingOccurrences } from '@/lib/recurring-engine'
 
 export async function getRecurring() {
   const supabase = await createClient()
@@ -16,13 +17,42 @@ export async function getRecurring() {
   return data ?? []
 }
 
+async function generateOccurrences(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  recurringId: string,
+  params: { frequency: 'weekly' | 'monthly' | 'yearly'; start_date: string; last_generated: string | null },
+  amount: number,
+  type: 'expense' | 'income',
+  categoryId: string | null,
+  name: string
+) {
+  const occurrences = computeMissingOccurrences(params, new Date())
+  if (occurrences.length === 0) return
+  await supabase.from('transactions').insert(
+    occurrences.map(date => ({
+      user_id: userId,
+      amount,
+      type,
+      category_id: categoryId,
+      description: name,
+      date,
+      is_recurring_instance: true,
+      recurring_id: recurringId,
+    }))
+  )
+  await supabase.from('recurring_transactions')
+    .update({ last_generated: occurrences[occurrences.length - 1] })
+    .eq('id', recurringId)
+}
+
 export async function createRecurring(input: unknown) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié' }
   const parsed = recurringSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
-  const { error } = await supabase.from('recurring_transactions').insert({
+  const { data: inserted, error } = await supabase.from('recurring_transactions').insert({
     user_id: user.id,
     name: parsed.data.name,
     amount: parsed.data.amount,
@@ -30,9 +60,15 @@ export async function createRecurring(input: unknown) {
     category_id: parsed.data.category_id ?? null,
     frequency: parsed.data.frequency,
     start_date: parsed.data.start_date,
-  })
-  if (error) return { error: error.message }
+  }).select('id').single()
+  if (error || !inserted) return { error: error?.message ?? 'Erreur création' }
+  await generateOccurrences(supabase, user.id, inserted.id, {
+    frequency: parsed.data.frequency,
+    start_date: parsed.data.start_date,
+    last_generated: null,
+  }, parsed.data.amount, parsed.data.type, parsed.data.category_id ?? null, parsed.data.name)
   revalidatePath('/recurring')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 
@@ -43,7 +79,6 @@ export async function updateRecurring(id: string, input: unknown) {
   const parsed = recurringSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
   const today = new Date().toISOString().split('T')[0]
-  // Delete future pre-generated instances so they get regenerated with new params
   await supabase.from('transactions')
     .delete()
     .eq('recurring_id', id)
@@ -59,6 +94,11 @@ export async function updateRecurring(id: string, input: unknown) {
     last_generated: null,
   }).eq('id', id).eq('user_id', user.id)
   if (error) return { error: error.message }
+  await generateOccurrences(supabase, user.id, id, {
+    frequency: parsed.data.frequency,
+    start_date: parsed.data.start_date,
+    last_generated: null,
+  }, parsed.data.amount, parsed.data.type, parsed.data.category_id ?? null, parsed.data.name)
   revalidatePath('/recurring')
   revalidatePath('/dashboard')
   return { success: true }
