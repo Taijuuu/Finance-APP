@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -15,6 +15,7 @@ interface Props {
 
 export function MonthNavigator({ year, month }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState(year)
 
@@ -31,7 +32,7 @@ export function MonthNavigator({ year, month }: Props) {
   }
 
   function push(y: number, m: number) {
-    router.push(`?month=${y}-${String(m).padStart(2, '0')}`)
+    router.push(`${pathname}?month=${y}-${String(m).padStart(2, '0')}`)
   }
 
   function selectMonth(m: number) {

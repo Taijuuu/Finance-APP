@@ -25,9 +25,6 @@ export default async function TransactionsPage({ searchParams }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Transactions</h1>
-      </div>
       <Suspense fallback={<>{Array.from({ length: 5 }).map((_, i) => <TransactionRowSkeleton key={i} />)}</>}>
         <TransactionListClient
           transactions={transactions as Parameters<typeof TransactionListClient>[0]['transactions']}

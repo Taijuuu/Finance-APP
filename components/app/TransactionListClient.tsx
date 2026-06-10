@@ -42,7 +42,7 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
     try {
       const result = await deleteTransaction(id)
       if (result.error) toast.error(result.error)
-      else toast.success('Transaction supprimée')
+      else { toast.success('Transaction supprimée'); router.refresh() }
     } catch {
       toast.error('Une erreur inattendue est survenue.')
     }
@@ -67,6 +67,34 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
 
   return (
     <>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Transactions</h1>
+        <AlertDialog>
+          <AlertDialogTrigger
+            render={<Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive" />}
+          >
+            <Trash2 size={14} className="mr-1.5" /> Tout supprimer
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer toutes les transactions ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action supprimera définitivement toutes vos transactions et réinitialisera le dashboard. Cette action est irréversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={handleDeleteAll}
+              >
+                Tout supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex flex-wrap gap-2">
           <input
@@ -112,30 +140,6 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
           <Button onClick={openCreate} size="sm" className="flex-1 sm:flex-none">
             <Plus size={14} className="mr-1" /> Ajouter
           </Button>
-          <AlertDialog>
-          <AlertDialogTrigger
-            render={<Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10" />}
-          >
-            <Trash2 size={16} />
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Supprimer toutes les transactions ?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Cette action supprimera définitivement toutes vos transactions et réinitialisera le dashboard. Cette action est irréversible.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={handleDeleteAll}
-              >
-                Tout supprimer
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
         </div>
       </div>
 

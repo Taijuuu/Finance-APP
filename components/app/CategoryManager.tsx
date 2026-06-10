@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
@@ -35,6 +36,7 @@ function iconToKey(iconName: string): string {
 interface Props { categories: Category[] }
 
 export function CategoryManager({ categories }: Props) {
+  const router = useRouter()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
   const [name, setName] = useState('')
@@ -56,13 +58,13 @@ export function CategoryManager({ categories }: Props) {
     const result = editing ? await updateCategory(editing.id, input) : await createCategory(input)
     setSaving(false)
     if (result.error) toast.error(result.error)
-    else { toast.success(editing ? 'Catégorie mise à jour' : 'Catégorie créée'); setSheetOpen(false) }
+    else { toast.success(editing ? 'Catégorie mise à jour' : 'Catégorie créée'); setSheetOpen(false); router.refresh() }
   }
 
   async function handleDelete(id: string) {
     const result = await deleteCategory(id)
     if (result.error) toast.error(result.error)
-    else toast.success('Catégorie supprimée')
+    else { toast.success('Catégorie supprimée'); router.refresh() }
   }
 
   const sortFn = (a: Category, b: Category) => {
@@ -141,10 +143,10 @@ export function CategoryManager({ categories }: Props) {
         </div>
       </div>
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent>
-          <SheetHeader><SheetTitle>{editing ? 'Modifier la catégorie' : 'Nouvelle catégorie'}</SheetTitle></SheetHeader>
-          <div className="mt-6 space-y-4">
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="sm:max-w-md overflow-y-auto max-h-[90dvh]">
+          <DialogHeader><DialogTitle>{editing ? 'Modifier la catégorie' : 'Nouvelle catégorie'}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Nom</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Courses, Salaire..." />
@@ -194,8 +196,8 @@ export function CategoryManager({ categories }: Props) {
               {saving ? 'Enregistrement...' : editing ? 'Mettre à jour' : 'Créer'}
             </Button>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

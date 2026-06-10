@@ -44,24 +44,31 @@ async function getRecapData(year: number, month: number) {
   return { income, expenses, prevIncome, prevExpenses, byCategory, topCategories, savings: savingsRate(income, expenses) }
 }
 
-function Delta({ current, prev }: { current: number; prev: number }) {
+function Delta({ current, prev, invert = false }: { current: number; prev: number; invert?: boolean }) {
   if (prev === 0) return null
   const pct = Math.round(((current - prev) / prev) * 100)
-  const positive = pct >= 0
+  const isGood = invert ? pct <= 0 : pct >= 0
   return (
-    <span className={`text-xs ml-1 ${positive ? 'text-rose-500' : 'text-emerald-600'}`}>
-      {positive ? '+' : ''}{pct}%
+    <span className={`text-xs ml-1 ${isGood ? 'text-emerald-600' : 'text-rose-500'}`}>
+      {pct >= 0 ? '+' : ''}{pct}%
     </span>
   )
 }
 
-interface Props { searchParams: Promise<{ year?: string; month?: string }> }
+function parseMonth(monthParam?: string): { year: number; month: number } {
+  if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+    const [y, m] = monthParam.split('-').map(Number)
+    return { year: y, month: m }
+  }
+  const now = new Date()
+  return { year: now.getFullYear(), month: now.getMonth() + 1 }
+}
+
+interface Props { searchParams: Promise<{ month?: string }> }
 
 export default async function RecapPage({ searchParams }: Props) {
   const params = await searchParams
-  const now = new Date()
-  const year = params.year ? parseInt(params.year) : now.getFullYear()
-  const month = params.month ? parseInt(params.month) : now.getMonth() + 1
+  const { year, month } = parseMonth(params.month)
 
   const data = await getRecapData(year, month)
   if (!data) return <p>Erreur de chargement</p>
@@ -88,7 +95,7 @@ export default async function RecapPage({ searchParams }: Props) {
         <div className="rounded-xl border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Dépenses</p>
           <p className="text-xl font-bold text-rose-500">{formatCurrency(expenses)}</p>
-          <Delta current={expenses} prev={prevExpenses} />
+          <Delta current={expenses} prev={prevExpenses} invert />
         </div>
         <div className="rounded-xl border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Solde</p>

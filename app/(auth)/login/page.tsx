@@ -100,7 +100,7 @@ export default function LoginPage() {
       </Card>
 
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md overflow-y-auto max-h-[90dvh]">
           <DialogHeader>
             <DialogTitle>Mot de passe oublié</DialogTitle>
             <DialogDescription>

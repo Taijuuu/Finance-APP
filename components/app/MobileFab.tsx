@@ -27,7 +27,7 @@ export function MobileFab() {
       <Button
         onClick={() => setOpen(true)}
         size="icon"
-        className="md:hidden fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full shadow-lg"
+        className="md:hidden fixed bottom-28 right-4 z-50 h-14 w-14 rounded-full shadow-lg"
       >
         <Plus size={24} />
       </Button>

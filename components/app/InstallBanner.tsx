@@ -10,11 +10,14 @@ export function InstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
 
   useEffect(() => {
-    if (localStorage.getItem('pwa-dismissed')) return
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+    if (standalone) return
+    if (sessionStorage.getItem('pwa-dismissed')) return
 
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream
-    const standalone = (window.navigator as Navigator & { standalone?: boolean }).standalone === true
-    if (ios && !standalone) { setIsIOS(true); setShow(true); return }
+    if (ios) { setIsIOS(true); setShow(true); return }
 
     const handler = (e: Event) => {
       e.preventDefault()
@@ -26,7 +29,7 @@ export function InstallBanner() {
   }, [])
 
   function dismiss() {
-    localStorage.setItem('pwa-dismissed', '1')
+    sessionStorage.setItem('pwa-dismissed', '1')
     setShow(false)
   }
 

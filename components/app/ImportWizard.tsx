@@ -140,17 +140,17 @@ export function ImportWizard({ categories }: Props) {
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Résumé de l'import</h2>
       {summary && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-xl border p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">{summary.toImport}</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-2xl font-bold text-foreground">{summary.toImport}</p>
             <p className="text-xs text-muted-foreground mt-1">à importer</p>
           </div>
-          <div className="rounded-xl border p-4 text-center">
-            <p className="text-3xl font-bold text-amber-500">{summary.duplicates}</p>
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-2xl font-bold text-amber-500">{summary.duplicates}</p>
             <p className="text-xs text-muted-foreground mt-1">doublons ignorés</p>
           </div>
-          <div className="rounded-xl border p-4 text-center">
-            <p className="text-3xl font-bold text-destructive">{summary.errors}</p>
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-2xl font-bold text-destructive">{summary.errors}</p>
             <p className="text-xs text-muted-foreground mt-1">erreurs</p>
           </div>
         </div>
