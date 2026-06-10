@@ -8,6 +8,7 @@ import { transactionSchema, type TransactionInput } from '@/lib/validations/tran
 import { createTransaction, updateTransaction } from '@/app/actions/transactions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
@@ -119,7 +120,7 @@ export function TransactionForm({ transaction, categories, onSuccess }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="date">Date</Label>
-        <Input id="date" type="date" {...register('date')} />
+        <DatePicker id="date" value={watch('date')} onChange={v => setValue('date', v, { shouldValidate: true })} />
         {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
       </div>
 

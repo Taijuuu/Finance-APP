@@ -8,6 +8,7 @@ import { recurringSchema, type RecurringInput } from '@/lib/validations/recurrin
 import { createRecurring, updateRecurring } from '@/app/actions/recurring'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
@@ -141,7 +142,7 @@ export function RecurringForm({ recurring, categories, onSuccess }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="start_date">Date de début</Label>
-        <Input id="start_date" type="date" {...register('start_date')} />
+        <DatePicker id="start_date" value={watch('start_date')} onChange={v => setValue('start_date', v, { shouldValidate: true })} />
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>

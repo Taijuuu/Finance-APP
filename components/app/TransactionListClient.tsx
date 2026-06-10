@@ -9,6 +9,7 @@ import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -97,12 +98,14 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
 
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex flex-wrap gap-2">
-          <input
-            type="month"
-            className="h-9 rounded-md border px-3 text-sm bg-background"
-            value={searchParams.month ?? ''}
-            onChange={e => setParam('month', e.target.value || undefined)}
-          />
+          <div className="w-44">
+            <DatePicker
+              mode="month"
+              value={searchParams.month ?? ''}
+              onChange={v => setParam('month', v || undefined)}
+              placeholder="Tous les mois"
+            />
+          </div>
           <Select
             value={searchParams.type ?? ''}
             onValueChange={v => setParam('type', (!v || v === '_all') ? undefined : v)}
