@@ -37,25 +37,32 @@ async function getDashboardData(year: number, month: number) {
     .eq('is_active', true)
 
   if (recurrings?.length) {
-    const viewedEnd = new Date(end)
-    const today = new Date()
-    const upTo = viewedEnd > today ? viewedEnd : today
+    // upTo = end of viewed month, or today if current/past month
+    const upTo = new Date(year, month, 0) // last day of viewed month, local time
     await Promise.all(recurrings.map(async (r) => {
-      const occurrences = computeMissingOccurrences({
-        frequency: r.frequency, start_date: r.start_date, last_generated: r.last_generated,
+      // Compute all dates from start_date regardless of last_generated
+      // to catch any gaps (failed inserts, state corruption, etc.)
+      const all = computeMissingOccurrences({
+        frequency: r.frequency, start_date: r.start_date, last_generated: null,
       }, upTo)
-      if (occurrences.length === 0) return
-      const { error } = await supabase.from('transactions').insert(
-        occurrences.map(date => ({
-          user_id: user.id, amount: r.amount, type: r.type, category_id: r.category_id,
-          description: r.name, date, is_recurring_instance: true, recurring_id: r.id,
+      if (all.length === 0) return
+      // Check which dates already exist to avoid duplicates
+      const { data: existing } = await supabase
+        .from('transactions')
+        .select('date')
+        .eq('recurring_id', r.id)
+        .eq('user_id', user.id)
+        .in('date', all)
+      const existingSet = new Set((existing ?? []).map(t => t.date))
+      const missing = all.filter(d => !existingSet.has(d))
+      if (missing.length === 0) return
+      await supabase.from('transactions').insert(
+        missing.map(date => ({
+          user_id: user.id, amount: Number(r.amount), type: r.type,
+          category_id: r.category_id, description: r.name,
+          date, is_recurring_instance: true, recurring_id: r.id,
         }))
       )
-      if (!error) {
-        await supabase.from('recurring_transactions')
-          .update({ last_generated: occurrences[occurrences.length - 1] })
-          .eq('id', r.id)
-      }
     }))
   }
 

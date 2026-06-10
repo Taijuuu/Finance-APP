@@ -21,29 +21,27 @@ async function generateOccurrences(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   recurringId: string,
-  params: { frequency: 'weekly' | 'monthly' | 'yearly'; start_date: string; last_generated: string | null },
+  params: { frequency: 'weekly' | 'monthly' | 'yearly'; start_date: string },
   amount: number,
   type: 'expense' | 'income',
   categoryId: string | null,
   name: string
 ) {
-  const occurrences = computeMissingOccurrences(params, new Date())
-  if (occurrences.length === 0) return
+  const all = computeMissingOccurrences({ ...params, last_generated: null }, new Date())
+  if (all.length === 0) return
+  const { data: existing } = await supabase
+    .from('transactions').select('date')
+    .eq('recurring_id', recurringId).eq('user_id', userId).in('date', all)
+  const existingSet = new Set((existing ?? []).map(t => t.date))
+  const missing = all.filter(d => !existingSet.has(d))
+  if (missing.length === 0) return
   await supabase.from('transactions').insert(
-    occurrences.map(date => ({
-      user_id: userId,
-      amount,
-      type,
-      category_id: categoryId,
-      description: name,
-      date,
-      is_recurring_instance: true,
-      recurring_id: recurringId,
+    missing.map(date => ({
+      user_id: userId, amount: Number(amount), type,
+      category_id: categoryId, description: name,
+      date, is_recurring_instance: true, recurring_id: recurringId,
     }))
   )
-  await supabase.from('recurring_transactions')
-    .update({ last_generated: occurrences[occurrences.length - 1] })
-    .eq('id', recurringId)
 }
 
 export async function createRecurring(input: unknown) {
@@ -65,7 +63,6 @@ export async function createRecurring(input: unknown) {
   await generateOccurrences(supabase, user.id, inserted.id, {
     frequency: parsed.data.frequency,
     start_date: parsed.data.start_date,
-    last_generated: null,
   }, parsed.data.amount, parsed.data.type, parsed.data.category_id ?? null, parsed.data.name)
   revalidatePath('/recurring')
   revalidatePath('/dashboard')
@@ -97,7 +94,6 @@ export async function updateRecurring(id: string, input: unknown) {
   await generateOccurrences(supabase, user.id, id, {
     frequency: parsed.data.frequency,
     start_date: parsed.data.start_date,
-    last_generated: null,
   }, parsed.data.amount, parsed.data.type, parsed.data.category_id ?? null, parsed.data.name)
   revalidatePath('/recurring')
   revalidatePath('/dashboard')
