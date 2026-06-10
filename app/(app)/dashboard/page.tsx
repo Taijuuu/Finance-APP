@@ -7,6 +7,7 @@ import { CategoryBadge } from '@/components/app/CategoryBadge'
 import { ChartSkeleton } from '@/components/app/Skeletons'
 import { MonthNavigator } from '@/components/app/MonthNavigator'
 import { formatCurrency, formatDate, savingsRate, getMonthRange } from '@/lib/utils'
+import { computeMissingOccurrences } from '@/lib/recurring-engine'
 
 interface Props {
   searchParams: Promise<{ month?: string }>
@@ -28,6 +29,36 @@ async function getDashboardData(year: number, month: number) {
 
   const { start, end } = getMonthRange(year, month)
 
+  // Generate any missing recurring occurrences before fetching data
+  const { data: recurrings } = await supabase
+    .from('recurring_transactions')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+
+  if (recurrings?.length) {
+    const viewedEnd = new Date(end)
+    const today = new Date()
+    const upTo = viewedEnd > today ? viewedEnd : today
+    await Promise.all(recurrings.map(async (r) => {
+      const occurrences = computeMissingOccurrences({
+        frequency: r.frequency, start_date: r.start_date, last_generated: r.last_generated,
+      }, upTo)
+      if (occurrences.length === 0) return
+      const { error } = await supabase.from('transactions').insert(
+        occurrences.map(date => ({
+          user_id: user.id, amount: r.amount, type: r.type, category_id: r.category_id,
+          description: r.name, date, is_recurring_instance: true, recurring_id: r.id,
+        }))
+      )
+      if (!error) {
+        await supabase.from('recurring_transactions')
+          .update({ last_generated: occurrences[occurrences.length - 1] })
+          .eq('id', r.id)
+      }
+    }))
+  }
+
   // 12-month range for charts (one batch query instead of 18 individual queries)
   const rangeStart = new Date(year, month - 13, 1)
   const { start: bulkStart } = getMonthRange(rangeStart.getFullYear(), rangeStart.getMonth() + 1)
@@ -41,7 +72,7 @@ async function getDashboardData(year: number, month: number) {
   const [{ data: bulkRaw }, { data: catDataRaw }, { data: recentRaw }, { data: budgetsRaw }] = await Promise.all([
     supabase.from('transactions').select('amount, type, category_id, date').eq('user_id', user.id).gte('date', bulkStart).lte('date', end),
     supabase.from('transactions').select('amount, categories(name, color)').eq('user_id', user.id).eq('type', 'expense').gte('date', start).lte('date', end),
-    supabase.from('transactions').select('*, categories(id, name, icon_name, color)').eq('user_id', user.id).eq('is_recurring_instance', false).gte('date', start).lte('date', end).order('date', { ascending: false }).limit(5),
+    supabase.from('transactions').select('*, categories(id, name, icon_name, color)').eq('user_id', user.id).gte('date', start).lte('date', end).order('date', { ascending: false }).limit(5),
     supabase.from('budgets').select('category_id, amount, categories(name)').eq('user_id', user.id).eq('month', month).eq('year', year),
   ])
 
