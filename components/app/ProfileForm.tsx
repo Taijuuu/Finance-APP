@@ -36,7 +36,7 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
         <div className="space-y-2">
           <Label>Devise</Label>
           <Select name="currency" defaultValue={profile?.currency ?? 'EUR'}>
-            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full"><SelectValue>{v => CURRENCIES.find(c => c.value === v)?.label ?? v}</SelectValue></SelectTrigger>
             <SelectContent>{CURRENCIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>

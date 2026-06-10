@@ -108,7 +108,9 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
             onValueChange={v => setParam('type', (!v || v === '_all') ? undefined : v)}
           >
             <SelectTrigger className="w-36">
-              <SelectValue placeholder="Tous types" />
+              <SelectValue placeholder="Tous types">
+                {v => v === 'expense' ? 'Dépenses' : v === 'income' ? 'Revenus' : 'Tous types'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="_all">Tous types</SelectItem>
@@ -121,7 +123,9 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
             onValueChange={v => setParam('category', (!v || v === '_all') ? undefined : v)}
           >
             <SelectTrigger className="flex-1 min-w-0 max-w-48">
-              <SelectValue placeholder="Toutes catégories" />
+              <SelectValue placeholder="Toutes catégories">
+                {v => categories.find(c => c.id === v)?.name ?? 'Toutes catégories'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="_all">Toutes catégories</SelectItem>
