@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { toggleRecurring, deleteRecurring } from '@/app/actions/recurring'
@@ -8,7 +9,7 @@ import { RecurringForm } from './RecurringForm'
 import { CategoryBadge } from './CategoryBadge'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { formatCurrency } from '@/lib/utils'
 import { computeMissingOccurrences } from '@/lib/recurring-engine'
@@ -41,14 +42,26 @@ function estimatedMonthly(recurrings: Recurring[]): number {
 interface Props { recurrings: Recurring[]; categories: Category[] }
 
 export function RecurringListClient({ recurrings, categories }: Props) {
+  const router = useRouter()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Recurring | null>(null)
+
+  function triggerGeneration() {
+    localStorage.removeItem('recurring-checked')
+    fetch('/api/recurring/generate', { method: 'POST' })
+      .then(r => r.json())
+      .then(() => router.refresh())
+      .catch(() => {})
+  }
 
   async function handleToggle(id: string, current: boolean) {
     try {
       const result = await toggleRecurring(id, !current)
       if (result.error) toast.error(result.error)
-      else toast.success(!current ? 'Activé' : 'Désactivé')
+      else {
+        toast.success(!current ? 'Activé' : 'Désactivé')
+        if (!current) triggerGeneration(); else router.refresh()
+      }
     } catch { toast.error('Une erreur inattendue est survenue.') }
   }
 
@@ -56,7 +69,7 @@ export function RecurringListClient({ recurrings, categories }: Props) {
     try {
       const result = await deleteRecurring(id)
       if (result.error) toast.error(result.error)
-      else toast.success('Récurrent supprimé')
+      else { toast.success('Récurrent supprimé'); router.refresh() }
     } catch { toast.error('Une erreur inattendue est survenue.') }
   }
 
@@ -114,14 +127,12 @@ export function RecurringListClient({ recurrings, categories }: Props) {
         ))}
       </div>
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent>
-          <SheetHeader><SheetTitle>{editing ? 'Modifier' : 'Nouvelle transaction récurrente'}</SheetTitle></SheetHeader>
-          <div className="mt-6">
-            <RecurringForm recurring={editing} categories={categories} onSuccess={() => setSheetOpen(false)} />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="w-full max-w-md overflow-y-auto max-h-[90dvh]">
+          <DialogHeader><DialogTitle>{editing ? 'Modifier' : 'Nouvelle transaction récurrente'}</DialogTitle></DialogHeader>
+          <RecurringForm recurring={editing} categories={categories} onSuccess={() => { setSheetOpen(false); triggerGeneration() }} />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

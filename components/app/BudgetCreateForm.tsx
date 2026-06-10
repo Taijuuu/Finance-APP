@@ -5,7 +5,8 @@ import { toast } from 'sonner'
 import { upsertBudget } from '@/app/actions/budgets'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import type { Database } from '@/types/database'
 
 type Category = Database['public']['Tables']['categories']['Row']
@@ -16,6 +17,8 @@ export function BudgetCreateForm({ categories, month, year }: Props) {
   const [categoryId, setCategoryId] = useState('')
   const [amount, setAmount] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const selectedCategory = categories.find(c => c.id === categoryId)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,7 +34,11 @@ export function BudgetCreateForm({ categories, month, year }: Props) {
     <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
       <div className="flex-1 min-w-40">
         <Select value={categoryId} onValueChange={v => setCategoryId(v ?? '')}>
-          <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
+          <SelectTrigger>
+            <span className={cn('flex-1 text-left text-sm truncate', !categoryId && 'text-muted-foreground')}>
+              {selectedCategory?.name ?? 'Catégorie'}
+            </span>
+          </SelectTrigger>
           <SelectContent>
             {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
