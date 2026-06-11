@@ -10,6 +10,7 @@ import { CategoryBadge } from './CategoryBadge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
+import { ExportButton } from '@/components/app/ExportButton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -70,6 +71,8 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
     <>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Transactions</h1>
+        <div className="flex items-center gap-2">
+        <ExportButton variant="outline" size="sm" />
         <AlertDialog>
           <AlertDialogTrigger
             render={<Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive" />}
@@ -94,6 +97,7 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 mb-4">
