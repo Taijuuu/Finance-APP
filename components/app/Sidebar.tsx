@@ -3,7 +3,7 @@
 import type { ElementType } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ArrowLeftRight, CalendarDays, Target, RefreshCw, Upload, User, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, CalendarDays, Target, RefreshCw, Download, User, Sun, Moon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ const primaryNav = [
 
 const toolsNav = [
   { href: '/recurring', label: 'Récurrents', icon: RefreshCw },
-  { href: '/import', label: 'Import', icon: Upload },
+  { href: '/import', label: 'Export', icon: Download },
 ]
 
 function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: ElementType }) {
