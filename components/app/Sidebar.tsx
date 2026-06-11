@@ -19,7 +19,7 @@ const primaryNav = [
 
 const toolsNav = [
   { href: '/recurring', label: 'Récurrents', icon: RefreshCw },
-  { href: '/import', label: 'Export', icon: Download },
+  { href: '/export', label: 'Export', icon: Download },
 ]
 
 function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: ElementType }) {

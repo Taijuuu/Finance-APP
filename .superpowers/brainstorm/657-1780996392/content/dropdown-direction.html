@@ -1,0 +1,134 @@
+<h2>Quelle direction pour les menus déroulants ?</h2>
+<p class="subtitle">Choisis l'ambiance qui correspond le mieux à ce que tu veux</p>
+
+<style>
+  .dropdown-preview {
+    font-family: 'Inter', sans-serif;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  /* Option A - Clean & Minimal */
+  .trigger-a {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: 10px;
+    background: #1A1A24; border: 1px solid #2A2A3A;
+    color: #F0F0FF; font-size: 13px; cursor: pointer;
+    width: 220px;
+  }
+  .trigger-a svg { color: #8888AA; }
+  .menu-a {
+    margin-top: 4px; background: #1A1A24;
+    border: 1px solid #2A2A3A; border-radius: 10px;
+    padding: 6px; width: 220px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .item-a {
+    padding: 8px 10px; border-radius: 7px;
+    color: #F0F0FF; font-size: 13px; cursor: pointer;
+  }
+  .item-a.active { background: rgba(108,99,255,0.15); color: #6C63FF; }
+  .item-a:hover { background: rgba(255,255,255,0.05); }
+
+  /* Option B - Glass & Glow */
+  .trigger-b {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: 10px;
+    background: rgba(108,99,255,0.1);
+    border: 1px solid rgba(108,99,255,0.3);
+    color: #F0F0FF; font-size: 13px; cursor: pointer;
+    width: 220px; backdrop-filter: blur(12px);
+    box-shadow: 0 0 12px rgba(108,99,255,0.1);
+  }
+  .menu-b {
+    margin-top: 4px;
+    background: rgba(26,26,36,0.95);
+    border: 1px solid rgba(108,99,255,0.2);
+    border-radius: 10px; padding: 6px; width: 220px;
+    box-shadow: 0 8px 32px rgba(108,99,255,0.15), 0 4px 16px rgba(0,0,0,0.4);
+    backdrop-filter: blur(20px);
+  }
+  .item-b {
+    padding: 8px 10px; border-radius: 7px;
+    color: #F0F0FF; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .item-b.active { background: rgba(108,99,255,0.2); color: #a09cff; }
+  .dot-b { width: 6px; height: 6px; border-radius: 50%; background: #6C63FF; }
+
+  /* Option C - Pill & Bold */
+  .trigger-c {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; border-radius: 100px;
+    background: #6C63FF;
+    color: #fff; font-size: 13px; cursor: pointer;
+    width: 220px; font-weight: 500;
+    box-shadow: 0 4px 16px rgba(108,99,255,0.4);
+  }
+  .menu-c {
+    margin-top: 4px; background: #111118;
+    border: 1px solid #2A2A3A; border-radius: 14px;
+    padding: 8px; width: 220px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .item-c {
+    padding: 10px 12px; border-radius: 10px;
+    color: #F0F0FF; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .item-c.active { background: #6C63FF; color: #fff; font-weight: 500; }
+  .check-c { color: #fff; font-size: 11px; }
+
+  .chevron { font-size: 11px; color: #8888AA; }
+  .preview-bg { background: #0A0A0F; padding: 20px; border-radius: 12px; }
+  .preview-label { font-size: 11px; color: #8888AA; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Clean & Minimal</h3>
+      <p>Fond sombre discret, hover subtil, sélection en violet doux. Sobre et lisible.</p>
+      <div class="preview-bg" style="margin-top:12px">
+        <div class="preview-label">Aperçu</div>
+        <div class="trigger-a">Dépense <span class="chevron">▼</span></div>
+        <div class="menu-a">
+          <div class="item-a active">✓ Dépense</div>
+          <div class="item-a">Revenu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Glass & Glow</h3>
+      <p>Glassmorphism, bordure violette lumineuse, ombre colorée. Premium et moderne.</p>
+      <div class="preview-bg" style="margin-top:12px">
+        <div class="preview-label">Aperçu</div>
+        <div class="trigger-b">Dépense <span class="chevron" style="color:#a09cff">▼</span></div>
+        <div class="menu-b">
+          <div class="item-b active"><span class="dot-b"></span> Dépense</div>
+          <div class="item-b">Revenu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Pill & Bold</h3>
+      <p>Trigger en pilule colorée, items avec fond plein à la sélection. Impact maximal.</p>
+      <div class="preview-bg" style="margin-top:12px">
+        <div class="preview-label">Aperçu</div>
+        <div class="trigger-c">Dépense <span style="color:rgba(255,255,255,0.7)">▼</span></div>
+        <div class="menu-c">
+          <div class="item-c active">Dépense <span class="check-c">✓</span></div>
+          <div class="item-c">Revenu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
