@@ -34,14 +34,18 @@ describe('buildTransactionsWorkbook — round-trip through a real .xlsx', () => 
     expect(reread.SheetNames).toEqual(['Transactions', 'Résumé mensuel', 'Par catégorie'])
   })
 
-  it('Transactions sheet: one row per transaction, correct columns', () => {
+  it('Transactions sheet: one row per transaction + total row, correct columns', () => {
     const aoa = utils.sheet_to_json<unknown[]>(reread.Sheets['Transactions'], { header: 1 })
     expect(aoa[0]).toEqual(['Date', 'Type', 'Catégorie', 'Description', 'Montant (€)', 'Récurrent'])
-    expect(aoa).toHaveLength(5) // header + 4 rows
+    expect(aoa).toHaveLength(6) // header + 4 rows + total
     expect(aoa[1]).toEqual(['2026-06-05', 'Revenu', 'Salaire', 'SNCF', 2500, 'Oui'])
     expect(aoa[2]).toEqual(['2026-06-06', 'Dépense', 'Alimentation', 'Carrefour', 14.19, 'Non'])
     // amount stays a real number (calculable in Excel)
     expect(typeof aoa[1][4]).toBe('number')
+    // total row: income(2500+100) − expenses(14.19+50) = 2535.81
+    const totalRow = aoa[5] as unknown[]
+    expect(totalRow[3]).toBe('TOTAL (Revenu − Dépenses)')
+    expect(totalRow[4]).toBeCloseTo(2535.81, 2)
   })
 
   it('Résumé mensuel: aggregates income/expense/balance per month, sorted', () => {

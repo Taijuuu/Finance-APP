@@ -44,10 +44,13 @@ export function buildTransactionsWorkbook(rows: ExportTx[]): WorkBook {
     Number(r.amount),
     r.is_recurring_instance ? 'Oui' : 'Non',
   ])
-  const wsTx = utils.aoa_to_sheet([txHeader, ...txBody])
+  const totalIncome = rows.filter(r => r.type === 'income').reduce((s, r) => s + Number(r.amount), 0)
+  const totalExpenses = rows.filter(r => r.type === 'expense').reduce((s, r) => s + Number(r.amount), 0)
+  const totalRow = ['', '', '', 'TOTAL (Revenu − Dépenses)', totalIncome - totalExpenses, '']
+  const wsTx = utils.aoa_to_sheet([txHeader, ...txBody, totalRow])
   wsTx['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 22 }, { wch: 34 }, { wch: 14 }, { wch: 11 }]
   wsTx['!autofilter'] = { ref: `A1:F${txBody.length + 1}` }
-  formatMoneyColumn(wsTx, 'E', txBody.length + 1)
+  formatMoneyColumn(wsTx, 'E', txBody.length + 2)
   utils.book_append_sheet(wb, wsTx, 'Transactions')
 
   // ── Sheet 2: Résumé mensuel ──────────────────────────────────────
