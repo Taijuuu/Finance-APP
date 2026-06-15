@@ -22,13 +22,14 @@ const toolsNav = [
   { href: '/export', label: 'Export', icon: Download },
 ]
 
-function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: ElementType }) {
+function NavLink({ href, label, icon: Icon, onNavigate }: { href: string; label: string; icon: ElementType; onNavigate?: () => void }) {
   const pathname = usePathname()
   const active = pathname === href || pathname.startsWith(href + '/')
   return (
     <Link
       href={href}
       prefetch={true}
+      onClick={onNavigate}
       className={cn(
         'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
         active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -40,22 +41,23 @@ function NavLink({ href, label, icon: Icon }: { href: string; label: string; ico
   )
 }
 
-export function Sidebar() {
+/** Full menu content shared by the desktop sidebar and the mobile drawer. */
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { theme, setTheme } = useTheme()
   return (
-    <aside className="hidden md:flex flex-col w-56 border-r bg-background h-screen fixed left-0 top-0 z-40">
+    <div className="flex flex-col h-full">
       <div className="px-4 py-5 border-b">
-        <Link href="/dashboard" className="text-sm font-bold tracking-widest uppercase text-foreground hover:text-primary transition-colors">FinanceApp</Link>
+        <Link href="/dashboard" onClick={onNavigate} className="text-sm font-bold tracking-widest uppercase text-foreground hover:text-primary transition-colors">FinanceApp</Link>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {primaryNav.map(item => <NavLink key={item.href} {...item} />)}
+        {primaryNav.map(item => <NavLink key={item.href} {...item} onNavigate={onNavigate} />)}
         <div className="pt-4">
           <p className="px-3 mb-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 font-medium">Outils</p>
-          {toolsNav.map(item => <NavLink key={item.href} {...item} />)}
+          {toolsNav.map(item => <NavLink key={item.href} {...item} onNavigate={onNavigate} />)}
         </div>
       </nav>
       <div className="px-3 py-4 border-t space-y-1">
-        <NavLink href="/profile" label="Profil" icon={User} />
+        <NavLink href="/profile" label="Profil" icon={User} onNavigate={onNavigate} />
         <InstallButton />
         <Button
           variant="ghost"
@@ -72,6 +74,14 @@ export function Sidebar() {
           </Button>
         </form>
       </div>
+    </div>
+  )
+}
+
+export function Sidebar() {
+  return (
+    <aside className="hidden md:flex flex-col w-56 border-r bg-background h-screen fixed left-0 top-0 z-40">
+      <SidebarNav />
     </aside>
   )
 }
