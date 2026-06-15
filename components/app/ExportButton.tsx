@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { buildTransactionsWorkbook, exportFilename, type ExportTx } from '@/lib/export-engine'
 
-export function ExportButton({ variant = 'default', size = 'default' }: { variant?: 'default' | 'outline'; size?: 'default' | 'sm' }) {
+export function ExportButton({ variant = 'default', size = 'default', compact = false }: { variant?: 'default' | 'outline'; size?: 'default' | 'sm'; compact?: boolean }) {
   const [busy, setBusy] = useState(false)
 
   async function handleExport() {
@@ -41,7 +41,7 @@ export function ExportButton({ variant = 'default', size = 'default' }: { varian
   return (
     <Button variant={variant} size={size} onClick={handleExport} disabled={busy}>
       {busy ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-      {busy ? 'Export...' : 'Exporter en Excel'}
+      <span className={compact ? 'hidden sm:inline' : undefined}>{busy ? 'Export...' : 'Exporter en Excel'}</span>
     </Button>
   )
 }

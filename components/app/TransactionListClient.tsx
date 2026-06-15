@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import { deleteTransaction, deleteAllTransactions } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
@@ -19,7 +20,12 @@ import type { Database } from '@/types/database'
 type Transaction = Database['public']['Tables']['transactions']['Row'] & {
   categories: Pick<Database['public']['Tables']['categories']['Row'], 'id' | 'name' | 'icon_name' | 'color'> | null
 }
+type Recurring = Database['public']['Tables']['recurring_transactions']['Row'] & {
+  categories: Pick<Database['public']['Tables']['categories']['Row'], 'id' | 'name' | 'icon_name' | 'color'> | null
+}
 type Category = Database['public']['Tables']['categories']['Row']
+
+const FREQ_LABELS: Record<string, string> = { weekly: 'Hebdo', monthly: 'Mensuel', yearly: 'Annuel' }
 
 interface Props {
   transactions: Transaction[]
@@ -27,15 +33,32 @@ interface Props {
   totalCount: number
   currentPage: number
   searchParams: Record<string, string | undefined>
+  recurringIncomes?: Recurring[]
 }
 
-export function TransactionListClient({ transactions, categories, totalCount, currentPage, searchParams }: Props) {
+export function TransactionListClient({ transactions, categories, totalCount, currentPage, searchParams, recurringIncomes = [] }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const pageSize = 20
   const totalPages = Math.ceil(totalCount / pageSize)
+
+  // Compact, responsive pagination: show first/last, current page and its neighbours,
+  // with ellipses in between so the bar never overflows on small screens.
+  function getPageItems(): (number | 'ellipsis')[] {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    const pages = new Set<number>([1, totalPages, currentPage, currentPage - 1, currentPage + 1])
+    const sorted = [...pages].filter(p => p >= 1 && p <= totalPages).sort((a, b) => a - b)
+    const items: (number | 'ellipsis')[] = []
+    let prev = 0
+    for (const p of sorted) {
+      if (p - prev > 1) items.push('ellipsis')
+      items.push(p)
+      prev = p
+    }
+    return items
+  }
 
   function openCreate() { setEditing(null); setSheetOpen(true) }
   function openEdit(t: Transaction) { setEditing(t); setSheetOpen(true) }
@@ -69,15 +92,15 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <h1 className="text-2xl font-bold">Transactions</h1>
-        <div className="flex items-center gap-2">
-        <ExportButton variant="outline" size="sm" />
+        <div className="flex items-center gap-2 flex-wrap">
+        <ExportButton variant="outline" size="sm" compact />
         <AlertDialog>
           <AlertDialogTrigger
             render={<Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive" />}
           >
-            <Trash2 size={14} className="mr-1.5" /> Tout supprimer
+            <Trash2 size={14} className="sm:mr-1.5" /> <span className="hidden sm:inline">Tout supprimer</span>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -100,9 +123,37 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
         </div>
       </div>
 
+      {recurringIncomes.length > 0 && (
+        <div className="md:hidden mb-4 rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
+            <span className="flex items-center gap-1.5 text-sm font-medium">
+              <RefreshCw size={14} className="text-emerald-600 dark:text-emerald-400" />
+              Revenus récurrents
+            </span>
+            <Link href="/recurring" className="text-xs text-primary font-medium">Gérer</Link>
+          </div>
+          <div className="divide-y">
+            {recurringIncomes.map(r => (
+              <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                {r.categories && (
+                  <CategoryBadge name="" iconName={r.categories.icon_name} color={r.categories.color} size="sm" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{r.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{r.categories?.name ?? 'Sans catégorie'} · {FREQ_LABELS[r.frequency] ?? r.frequency}</p>
+                </div>
+                <span className="text-sm font-semibold shrink-0 whitespace-nowrap text-emerald-600 dark:text-emerald-400">
+                  +{formatCurrency(Number(r.amount))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex flex-wrap gap-2">
-          <div className="w-44">
+          <div className="flex-1 min-w-[150px] sm:flex-none sm:w-44">
             <DatePicker
               mode="month"
               value={searchParams.month ?? ''}
@@ -114,7 +165,7 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
             value={searchParams.type ?? ''}
             onValueChange={v => setParam('type', (!v || v === '_all') ? undefined : v)}
           >
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="flex-1 min-w-[130px] sm:flex-none sm:w-36">
               <SelectValue placeholder="Tous types">
                 {v => v === 'expense' ? 'Dépenses' : v === 'income' ? 'Revenus' : 'Tous types'}
               </SelectValue>
@@ -160,23 +211,23 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
         ) : (
           <div className="divide-y">
             {transactions.map(t => (
-              <div key={t.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+              <div key={t.id} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 hover:bg-muted/30 transition-colors">
                 {t.categories && (
                   <CategoryBadge name="" iconName={t.categories.icon_name} color={t.categories.color} size="sm" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{t.description || t.categories?.name || '—'}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(t.date)} · {t.categories?.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{formatDate(t.date)} · {t.categories?.name}</p>
                 </div>
-                <span className={`text-sm font-semibold ${t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                <span className={`text-sm font-semibold shrink-0 whitespace-nowrap ${t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                   {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount))}
                 </span>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openEdit(t)}>
                   <Pencil size={13} />
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger
-                    render={<Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" />}
+                    render={<Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" />}
                   >
                     <Trash2 size={13} />
                   </AlertDialogTrigger>
@@ -198,17 +249,42 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-            <Button
-              key={p}
-              variant={p === currentPage ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setParam('page', String(p))}
-            >
-              {p}
-            </Button>
-          ))}
+        <div className="flex flex-wrap justify-center items-center gap-1.5 mt-4">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            disabled={currentPage <= 1}
+            onClick={() => setParam('page', String(currentPage - 1))}
+            aria-label="Page précédente"
+          >
+            <ChevronLeft size={15} />
+          </Button>
+          {getPageItems().map((p, i) =>
+            p === 'ellipsis' ? (
+              <span key={`e${i}`} className="px-1 text-muted-foreground select-none">…</span>
+            ) : (
+              <Button
+                key={p}
+                variant={p === currentPage ? 'default' : 'outline'}
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => setParam('page', String(p))}
+              >
+                {p}
+              </Button>
+            )
+          )}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            disabled={currentPage >= totalPages}
+            onClick={() => setParam('page', String(currentPage + 1))}
+            aria-label="Page suivante"
+          >
+            <ChevronRight size={15} />
+          </Button>
         </div>
       )}
 

@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ArrowLeftRight, CalendarDays, User } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, RefreshCw, CalendarDays, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const items = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { href: '/recurring', label: 'Récurrents', icon: RefreshCw },
   { href: '/recap', label: 'Récap', icon: CalendarDays },
   { href: '/profile', label: 'Profil', icon: User },
 ]
@@ -27,12 +28,12 @@ export function BottomNav() {
             href={href}
             prefetch={true}
             className={cn(
-              'flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors py-1',
+              'flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors py-1 px-0.5',
               active ? 'text-primary' : 'text-muted-foreground'
             )}
           >
-            <Icon size={20} />
-            {label}
+            <Icon size={20} className="shrink-0" />
+            <span className="max-w-full truncate leading-tight">{label}</span>
           </Link>
         )
       })}
