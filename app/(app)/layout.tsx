@@ -8,10 +8,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="md:pl-56">
+      <div className="md:pl-56 overflow-x-hidden">
         <MobileMenu />
         <main className="md:pb-0 min-h-screen" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4rem)' }}>
-          <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="max-w-6xl mx-auto px-4 py-6 min-w-0">
             {children}
           </div>
         </main>
