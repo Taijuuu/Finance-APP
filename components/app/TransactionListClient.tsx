@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
-import Link from 'next/link'
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { deleteTransaction, deleteAllTransactions } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
@@ -20,12 +19,7 @@ import type { Database } from '@/types/database'
 type Transaction = Database['public']['Tables']['transactions']['Row'] & {
   categories: Pick<Database['public']['Tables']['categories']['Row'], 'id' | 'name' | 'icon_name' | 'color'> | null
 }
-type Recurring = Database['public']['Tables']['recurring_transactions']['Row'] & {
-  categories: Pick<Database['public']['Tables']['categories']['Row'], 'id' | 'name' | 'icon_name' | 'color'> | null
-}
 type Category = Database['public']['Tables']['categories']['Row']
-
-const FREQ_LABELS: Record<string, string> = { weekly: 'Hebdo', monthly: 'Mensuel', yearly: 'Annuel' }
 
 interface Props {
   transactions: Transaction[]
@@ -34,10 +28,9 @@ interface Props {
   summary: { income: number; expenses: number; count: number }
   currentPage: number
   searchParams: Record<string, string | undefined>
-  recurringIncomes?: Recurring[]
 }
 
-export function TransactionListClient({ transactions, categories, totalCount, summary, currentPage, searchParams, recurringIncomes = [] }: Props) {
+export function TransactionListClient({ transactions, categories, totalCount, summary, currentPage, searchParams }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -124,51 +117,15 @@ export function TransactionListClient({ transactions, categories, totalCount, su
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
-        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
-          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Dépenses</p>
-          <p className="text-base sm:text-xl font-bold text-rose-500 truncate">{formatCurrency(summary.expenses)}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
-          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Revenus</p>
-          <p className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate">{formatCurrency(summary.income)}</p>
-        </div>
-        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Solde</p>
-          <p className={`text-base sm:text-xl font-bold truncate ${summary.income - summary.expenses >= 0 ? 'text-foreground' : 'text-rose-500'}`}>{formatCurrency(summary.income - summary.expenses)}</p>
+      <div className="mb-4 rounded-xl border bg-card p-4 overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">
+            Dépense totale {summary.count > 0 && <span className="normal-case">· {summary.count} transaction{summary.count > 1 ? 's' : ''}</span>}
+          </p>
+          <p className="text-xl sm:text-2xl font-bold text-rose-500">{formatCurrency(summary.expenses)}</p>
         </div>
       </div>
-
-      {recurringIncomes.length > 0 && (
-        <div className="md:hidden mb-4 rounded-xl border bg-card overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
-            <span className="flex items-center gap-1.5 text-sm font-medium">
-              <RefreshCw size={14} className="text-emerald-600 dark:text-emerald-400" />
-              Revenus récurrents
-            </span>
-            <Link href="/recurring" className="text-xs text-primary font-medium">Gérer</Link>
-          </div>
-          <div className="divide-y">
-            {recurringIncomes.map(r => (
-              <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
-                {r.categories && (
-                  <CategoryBadge name="" iconName={r.categories.icon_name} color={r.categories.color} size="sm" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{r.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{r.categories?.name ?? 'Sans catégorie'} · {FREQ_LABELS[r.frequency] ?? r.frequency}</p>
-                </div>
-                <span className="text-sm font-semibold shrink-0 whitespace-nowrap text-emerald-600 dark:text-emerald-400">
-                  +{formatCurrency(Number(r.amount))}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex flex-wrap gap-2">

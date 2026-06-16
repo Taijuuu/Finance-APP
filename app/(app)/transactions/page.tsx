@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { getTransactions, getTransactionsSummary } from '@/app/actions/transactions'
 import { getCategories } from '@/app/actions/categories'
-import { getRecurring } from '@/app/actions/recurring'
 import { TransactionListClient } from '@/components/app/TransactionListClient'
 import { TransactionRowSkeleton } from '@/components/app/Skeletons'
 
@@ -11,7 +10,7 @@ interface Props {
 
 export default async function TransactionsPage({ searchParams }: Props) {
   const params = await searchParams
-  const [{ data: transactions, count }, summary, categories, recurrings] = await Promise.all([
+  const [{ data: transactions, count }, summary, categories] = await Promise.all([
     getTransactions({
       month: params.month,
       type: params.type as 'expense' | 'income' | undefined,
@@ -28,13 +27,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
       q: params.q,
     }),
     getCategories(),
-    getRecurring(),
   ])
-
-  type RecurringIncomes = NonNullable<Parameters<typeof TransactionListClient>[0]['recurringIncomes']>
-  const recurringIncomes = (recurrings as RecurringIncomes).filter(
-    r => r.type === 'income' && r.is_active,
-  )
 
   return (
     <div>
@@ -46,7 +39,6 @@ export default async function TransactionsPage({ searchParams }: Props) {
           summary={summary}
           currentPage={params.page ? Number(params.page) : 1}
           searchParams={params}
-          recurringIncomes={recurringIncomes}
         />
       </Suspense>
     </div>
