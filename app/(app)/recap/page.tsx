@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { HorizontalBarChart } from '@/components/charts/HorizontalBarChart'
 import { RecapNavigator } from '@/components/app/RecapNavigator'
 import { formatCurrency, getMonthRange, savingsRate } from '@/lib/utils'
+import { syncRecurring, syncUpTo } from '@/lib/recurring-sync'
 import { Progress } from '@/components/ui/progress'
 
 type TxRow = { amount: number; type: string; category_id: string | null; categories: { id: string; name: string; color: string | null } | null }
@@ -11,6 +12,9 @@ async function getRecapData(year: number, month: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+
+  // Materialise missing recurring occurrences (and clean orphans) before fetching
+  await syncRecurring(supabase, user.id, syncUpTo(year, month))
 
   const { start, end } = getMonthRange(year, month)
   const prevDate = new Date(year, month - 2, 1)

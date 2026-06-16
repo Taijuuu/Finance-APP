@@ -7,7 +7,7 @@ import { CategoryBadge } from '@/components/app/CategoryBadge'
 import { ChartSkeleton } from '@/components/app/Skeletons'
 import { MonthNavigator } from '@/components/app/MonthNavigator'
 import { formatCurrency, formatDate, savingsRate, getMonthRange } from '@/lib/utils'
-import { computeMissingOccurrences } from '@/lib/recurring-engine'
+import { syncRecurring, syncUpTo } from '@/lib/recurring-sync'
 
 interface Props {
   searchParams: Promise<{ month?: string }>
@@ -29,45 +29,8 @@ async function getDashboardData(year: number, month: number) {
 
   const { start, end } = getMonthRange(year, month)
 
-  // Generate any missing recurring occurrences before fetching data
-  const { data: recurrings } = await supabase
-    .from('recurring_transactions')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-
-  if (recurrings?.length) {
-    // upTo = end of viewed month, but never beyond today so future occurrences
-    // (e.g. a debit scheduled later this month) don't appear before their date
-    const monthEnd = new Date(year, month, 0) // last day of viewed month, local time
-    const now = new Date()
-    const upTo = monthEnd < now ? monthEnd : now
-    await Promise.all(recurrings.map(async (r) => {
-      // Compute all dates from start_date regardless of last_generated
-      // to catch any gaps (failed inserts, state corruption, etc.)
-      const all = computeMissingOccurrences({
-        frequency: r.frequency, start_date: r.start_date, last_generated: null,
-      }, upTo)
-      if (all.length === 0) return
-      // Check which dates already exist to avoid duplicates
-      const { data: existing } = await supabase
-        .from('transactions')
-        .select('date')
-        .eq('recurring_id', r.id)
-        .eq('user_id', user.id)
-        .in('date', all)
-      const existingSet = new Set((existing ?? []).map(t => t.date))
-      const missing = all.filter(d => !existingSet.has(d))
-      if (missing.length === 0) return
-      await supabase.from('transactions').insert(
-        missing.map(date => ({
-          user_id: user.id, amount: Number(r.amount), type: r.type,
-          category_id: r.category_id, description: r.name,
-          date, is_recurring_instance: true, recurring_id: r.id,
-        }))
-      )
-    }))
-  }
+  // Materialise missing recurring occurrences (and clean orphans) before fetching
+  await syncRecurring(supabase, user.id, syncUpTo(year, month))
 
   // 12-month range for charts (one batch query instead of 18 individual queries)
   const rangeStart = new Date(year, month - 13, 1)
