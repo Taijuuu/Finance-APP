@@ -66,6 +66,8 @@ export async function createRecurring(input: unknown) {
   }, parsed.data.amount, parsed.data.type, parsed.data.category_id ?? null, parsed.data.name)
   revalidatePath('/recurring')
   revalidatePath('/dashboard')
+  revalidatePath('/recap')
+  revalidatePath('/transactions')
   return { success: true }
 }
 
@@ -97,6 +99,8 @@ export async function updateRecurring(id: string, input: unknown) {
   }, parsed.data.amount, parsed.data.type, parsed.data.category_id ?? null, parsed.data.name)
   revalidatePath('/recurring')
   revalidatePath('/dashboard')
+  revalidatePath('/recap')
+  revalidatePath('/transactions')
   return { success: true }
 }
 
@@ -107,6 +111,9 @@ export async function toggleRecurring(id: string, is_active: boolean) {
   const { error } = await supabase.from('recurring_transactions').update({ is_active }).eq('id', id).eq('user_id', user.id)
   if (error) return { error: error.message }
   revalidatePath('/recurring')
+  revalidatePath('/dashboard')
+  revalidatePath('/recap')
+  revalidatePath('/transactions')
   return { success: true }
 }
 

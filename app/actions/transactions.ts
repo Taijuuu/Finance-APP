@@ -94,6 +94,7 @@ export async function createTransaction(input: unknown) {
   if (error) return { error: error.message }
   revalidatePath('/transactions')
   revalidatePath('/dashboard')
+  revalidatePath('/recap')
   return { success: true }
 }
 
@@ -113,6 +114,7 @@ export async function updateTransaction(id: string, input: unknown) {
   if (error) return { error: error.message }
   revalidatePath('/transactions')
   revalidatePath('/dashboard')
+  revalidatePath('/recap')
   return { success: true }
 }
 
@@ -124,6 +126,7 @@ export async function deleteTransaction(id: string) {
   if (error) return { error: error.message }
   revalidatePath('/transactions')
   revalidatePath('/dashboard')
+  revalidatePath('/recap')
   return { success: true }
 }
 
