@@ -117,19 +117,27 @@ export function TransactionListClient({ transactions, categories, totalCount, su
         </div>
       </div>
 
-      <div className="mb-4 rounded-xl border bg-card p-4 overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">
-            Dépense totale {summary.count > 0 && <span className="normal-case">· {summary.count} transaction{summary.count > 1 ? 's' : ''}</span>}
-          </p>
-          <p className="text-xl sm:text-2xl font-bold text-rose-500">{formatCurrency(summary.expenses)}</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Total dépenses</p>
+          <p className="text-base sm:text-xl font-bold text-rose-500 truncate">{formatCurrency(summary.expenses)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Total revenus</p>
+          <p className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate">{formatCurrency(summary.income)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Solde</p>
+          <p className={`text-base sm:text-xl font-bold truncate ${summary.income - summary.expenses >= 0 ? 'text-foreground' : 'text-rose-500'}`}>{formatCurrency(summary.income - summary.expenses)}</p>
         </div>
       </div>
 
       <div className="flex flex-col gap-2 mb-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex-1 min-w-[150px] sm:flex-none sm:w-44">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <div className="w-full sm:w-44">
             <DatePicker
               mode="month"
               value={searchParams.month ?? ''}
@@ -141,7 +149,7 @@ export function TransactionListClient({ transactions, categories, totalCount, su
             value={searchParams.type ?? ''}
             onValueChange={v => setParam('type', (!v || v === '_all') ? undefined : v)}
           >
-            <SelectTrigger className="flex-1 min-w-[130px] sm:flex-none sm:w-36">
+            <SelectTrigger className="w-full sm:w-36">
               <SelectValue placeholder="Tous types">
                 {v => v === 'expense' ? 'Dépenses' : v === 'income' ? 'Revenus' : 'Tous types'}
               </SelectValue>
@@ -156,7 +164,7 @@ export function TransactionListClient({ transactions, categories, totalCount, su
             value={searchParams.category ?? ''}
             onValueChange={v => setParam('category', (!v || v === '_all') ? undefined : v)}
           >
-            <SelectTrigger className="flex-1 min-w-0 max-w-48">
+            <SelectTrigger className="col-span-2 w-full sm:w-48">
               <SelectValue placeholder="Toutes catégories">
                 {v => categories.find(c => c.id === v)?.name ?? 'Toutes catégories'}
               </SelectValue>
@@ -169,7 +177,7 @@ export function TransactionListClient({ transactions, categories, totalCount, su
           <input
             type="search"
             placeholder="Rechercher..."
-            className="h-9 rounded-md border px-3 text-base md:text-sm bg-background flex-1 min-w-[140px]"
+            className="col-span-2 h-9 w-full rounded-md border px-3 text-base md:text-sm bg-background sm:flex-1 sm:min-w-[140px]"
             defaultValue={searchParams.q ?? ''}
             onKeyDown={e => { if (e.key === 'Enter') setParam('q', (e.target as HTMLInputElement).value || undefined) }}
           />
