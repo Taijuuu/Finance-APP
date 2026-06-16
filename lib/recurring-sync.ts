@@ -12,20 +12,36 @@ type SupabaseServer = Awaited<ReturnType<typeof createClient>>
  * orphan cleanup only ever targets generated instances.
  */
 export async function syncRecurring(supabase: SupabaseServer, userId: string, upTo: Date) {
-  // 1. Remove orphaned generated instances (template gone -> recurring_id null)
-  await supabase
+  // 1. Remove ALL orphaned generated instances: any recurring instance whose
+  // template no longer exists — whether recurring_id is null (ON DELETE SET NULL)
+  // OR still points to a deleted template (dangling reference). This is robust to
+  // however the DB handled the foreign key on deletion.
+  const { data: templates } = await supabase
+    .from('recurring_transactions')
+    .select('id')
+    .eq('user_id', userId)
+  const validIds = new Set((templates ?? []).map((t) => t.id))
+
+  const { data: instances } = await supabase
     .from('transactions')
-    .delete()
+    .select('id, recurring_id')
     .eq('user_id', userId)
     .eq('is_recurring_instance', true)
-    .is('recurring_id', null)
+  const orphanIds = (instances ?? [])
+    .filter((t) => !t.recurring_id || !validIds.has(t.recurring_id))
+    .map((t) => t.id)
+  if (orphanIds.length) {
+    await supabase.from('transactions').delete().eq('user_id', userId).in('id', orphanIds)
+  }
 
   // 2. Generate missing occurrences for active recurrings
-  const { data: recurrings } = await supabase
-    .from('recurring_transactions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('is_active', true)
+  const recurrings = (templates && templates.length)
+    ? (await supabase
+        .from('recurring_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)).data
+    : null
   if (!recurrings?.length) return
 
   await Promise.all(
