@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { getTransactions } from '@/app/actions/transactions'
+import { getTransactions, getTransactionsSummary } from '@/app/actions/transactions'
 import { getCategories } from '@/app/actions/categories'
 import { getRecurring } from '@/app/actions/recurring'
 import { TransactionListClient } from '@/components/app/TransactionListClient'
@@ -11,7 +11,7 @@ interface Props {
 
 export default async function TransactionsPage({ searchParams }: Props) {
   const params = await searchParams
-  const [{ data: transactions, count }, categories, recurrings] = await Promise.all([
+  const [{ data: transactions, count }, summary, categories, recurrings] = await Promise.all([
     getTransactions({
       month: params.month,
       type: params.type as 'expense' | 'income' | undefined,
@@ -20,6 +20,12 @@ export default async function TransactionsPage({ searchParams }: Props) {
       sort: params.sort,
       order: params.order as 'asc' | 'desc' | undefined,
       page: params.page ? Number(params.page) : 1,
+    }),
+    getTransactionsSummary({
+      month: params.month,
+      type: params.type as 'expense' | 'income' | undefined,
+      category_id: params.category,
+      q: params.q,
     }),
     getCategories(),
     getRecurring(),
@@ -37,6 +43,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
           transactions={transactions as Parameters<typeof TransactionListClient>[0]['transactions']}
           categories={categories}
           totalCount={count}
+          summary={summary}
           currentPage={params.page ? Number(params.page) : 1}
           searchParams={params}
           recurringIncomes={recurringIncomes}

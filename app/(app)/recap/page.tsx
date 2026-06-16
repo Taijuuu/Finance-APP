@@ -17,8 +17,8 @@ async function getRecapData(year: number, month: number) {
   const { start: prevStart, end: prevEnd } = getMonthRange(prevDate.getFullYear(), prevDate.getMonth() + 1)
 
   const [{ data: currRaw }, { data: prevRaw }] = await Promise.all([
-    supabase.from('transactions').select('amount, type, category_id, categories(id, name, color)').eq('user_id', user.id).eq('is_recurring_instance', false).gte('date', start).lte('date', end),
-    supabase.from('transactions').select('amount, type, category_id, categories(id, name, color)').eq('user_id', user.id).eq('is_recurring_instance', false).gte('date', prevStart).lte('date', prevEnd),
+    supabase.from('transactions').select('amount, type, category_id, categories(id, name, color)').eq('user_id', user.id).gte('date', start).lte('date', end),
+    supabase.from('transactions').select('amount, type, category_id, categories(id, name, color)').eq('user_id', user.id).gte('date', prevStart).lte('date', prevEnd),
   ])
 
   const curr = currRaw as TxRow[] | null ?? []

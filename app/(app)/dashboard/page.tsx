@@ -37,8 +37,11 @@ async function getDashboardData(year: number, month: number) {
     .eq('is_active', true)
 
   if (recurrings?.length) {
-    // upTo = end of viewed month, or today if current/past month
-    const upTo = new Date(year, month, 0) // last day of viewed month, local time
+    // upTo = end of viewed month, but never beyond today so future occurrences
+    // (e.g. a debit scheduled later this month) don't appear before their date
+    const monthEnd = new Date(year, month, 0) // last day of viewed month, local time
+    const now = new Date()
+    const upTo = monthEnd < now ? monthEnd : now
     await Promise.all(recurrings.map(async (r) => {
       // Compute all dates from start_date regardless of last_generated
       // to catch any gaps (failed inserts, state corruption, etc.)

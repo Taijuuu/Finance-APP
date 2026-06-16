@@ -114,16 +114,16 @@ export async function deleteRecurring(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Non authentifié' }
-  const today = new Date().toISOString().split('T')[0]
-  // Remove future pre-generated instances before deleting the recurring
+  // Remove ALL generated instances (past & future) so they stop counting in totals
   await supabase.from('transactions')
     .delete()
     .eq('recurring_id', id)
     .eq('user_id', user.id)
-    .gt('date', today)
   const { error } = await supabase.from('recurring_transactions').delete().eq('id', id).eq('user_id', user.id)
   if (error) return { error: error.message }
   revalidatePath('/recurring')
   revalidatePath('/dashboard')
+  revalidatePath('/recap')
+  revalidatePath('/transactions')
   return { success: true }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -21,6 +21,23 @@ const FREQ_LABELS: Record<string, string> = {
   weekly: 'Hebdomadaire',
   monthly: 'Mensuel',
   yearly: 'Annuel',
+}
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** Day-of-month (1-31) from a yyyy-mm-dd string */
+function dayOf(dateStr?: string): number {
+  if (!dateStr) return new Date().getDate()
+  const m = /^\d{4}-\d{2}-(\d{2})$/.exec(dateStr)
+  return m ? Number(m[1]) : new Date().getDate()
+}
+
+/** Replace the day component of a yyyy-mm-dd string with `day` (clamped 1-31) */
+function withDay(dateStr: string, day: number): string {
+  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(dateStr)
+  const clamped = Math.min(31, Math.max(1, day))
+  if (!m) return dateStr
+  return `${m[1]}-${m[2]}-${pad(clamped)}`
 }
 
 interface Props {
@@ -50,6 +67,15 @@ export function RecurringForm({ recurring, categories, onSuccess }: Props) {
   const selectedType = watch('type')
   const selectedCategoryId = watch('category_id')
   const selectedFrequency = watch('frequency')
+  const startDate = watch('start_date')
+
+  // Day of the month the transaction is debited/credited (for monthly & yearly)
+  const [paymentDay, setPaymentDay] = useState<number>(() => dayOf(recurring?.start_date))
+  useEffect(() => {
+    if (recurring) setPaymentDay(dayOf(recurring.start_date))
+  }, [recurring])
+
+  const showPaymentDay = selectedFrequency === 'monthly' || selectedFrequency === 'yearly'
 
   // Clear category when type changes and selected category no longer matches
   useEffect(() => {
@@ -62,8 +88,13 @@ export function RecurringForm({ recurring, categories, onSuccess }: Props) {
   }, [selectedType, selectedCategoryId, categories, setValue])
 
   async function onSubmit(data: RecurringInput) {
+    // For monthly/yearly, force the chosen day-of-month onto the start date so the
+    // occurrence falls on the debit day (e.g. the 5th) every period.
+    const payload = (selectedFrequency === 'monthly' || selectedFrequency === 'yearly')
+      ? { ...data, start_date: withDay(data.start_date, paymentDay) }
+      : data
     try {
-      const result = isEdit ? await updateRecurring(recurring!.id, data) : await createRecurring(data)
+      const result = isEdit ? await updateRecurring(recurring!.id, payload) : await createRecurring(payload)
       if (result.error) { toast.error(result.error); return }
       toast.success(isEdit ? 'Récurrent mis à jour' : 'Récurrent créé')
       onSuccess()
@@ -140,10 +171,31 @@ export function RecurringForm({ recurring, categories, onSuccess }: Props) {
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="start_date">Date de début</Label>
-        <DatePicker id="start_date" value={watch('start_date')} onChange={v => setValue('start_date', v, { shouldValidate: true })} />
-      </div>
+      {showPaymentDay ? (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="start_date">À partir de</Label>
+            <DatePicker id="start_date" mode="month" value={startDate} onChange={v => setValue('start_date', withDay(`${v}-01`, paymentDay), { shouldValidate: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="payment_day">Jour du prélèvement</Label>
+            <Input
+              id="payment_day"
+              type="number"
+              min={1}
+              max={31}
+              value={paymentDay}
+              onChange={e => setPaymentDay(Math.min(31, Math.max(1, Number(e.target.value) || 1)))}
+            />
+            <p className="text-xs text-muted-foreground">Chaque {selectedFrequency === 'yearly' ? 'année' : 'mois'} le {paymentDay}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="start_date">Date de début</Label>
+          <DatePicker id="start_date" value={startDate} onChange={v => setValue('start_date', v, { shouldValidate: true })} />
+        </div>
+      )}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? 'Enregistrement...' : isEdit ? 'Mettre à jour' : 'Créer'}

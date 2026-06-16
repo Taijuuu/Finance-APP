@@ -104,7 +104,7 @@ export function RecurringListClient({ recurrings, categories }: Props) {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Supprimer ce récurrent ?</AlertDialogTitle>
-                  <AlertDialogDescription>Les transactions déjà générées ne seront pas supprimées.</AlertDialogDescription>
+                  <AlertDialogDescription>Toutes les transactions générées par ce récurrent seront aussi supprimées et retirées des totaux.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Annuler</AlertDialogCancel>

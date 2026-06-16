@@ -31,12 +31,13 @@ interface Props {
   transactions: Transaction[]
   categories: Category[]
   totalCount: number
+  summary: { income: number; expenses: number; count: number }
   currentPage: number
   searchParams: Record<string, string | undefined>
   recurringIncomes?: Recurring[]
 }
 
-export function TransactionListClient({ transactions, categories, totalCount, currentPage, searchParams, recurringIncomes = [] }: Props) {
+export function TransactionListClient({ transactions, categories, totalCount, summary, currentPage, searchParams, recurringIncomes = [] }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -123,6 +124,24 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
         </div>
       </div>
 
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Dépenses</p>
+          <p className="text-base sm:text-xl font-bold text-rose-500 truncate">{formatCurrency(summary.expenses)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Revenus</p>
+          <p className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate">{formatCurrency(summary.income)}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+          <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Solde</p>
+          <p className={`text-base sm:text-xl font-bold truncate ${summary.income - summary.expenses >= 0 ? 'text-foreground' : 'text-rose-500'}`}>{formatCurrency(summary.income - summary.expenses)}</p>
+        </div>
+      </div>
+
       {recurringIncomes.length > 0 && (
         <div className="md:hidden mb-4 rounded-xl border bg-card overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
@@ -193,7 +212,7 @@ export function TransactionListClient({ transactions, categories, totalCount, cu
           <input
             type="search"
             placeholder="Rechercher..."
-            className="h-9 rounded-md border px-3 text-sm bg-background flex-1 min-w-[140px]"
+            className="h-9 rounded-md border px-3 text-base md:text-sm bg-background flex-1 min-w-[140px]"
             defaultValue={searchParams.q ?? ''}
             onKeyDown={e => { if (e.key === 'Enter') setParam('q', (e.target as HTMLInputElement).value || undefined) }}
           />

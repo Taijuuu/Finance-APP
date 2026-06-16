@@ -43,7 +43,7 @@ export function DatePicker({ value, onChange, mode = 'day', placeholder, id, cla
         id={id}
         type="button"
         className={cn(
-          'flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground transition-all outline-none hover:border-primary/40 hover:bg-card/80 focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-primary/20',
+          'flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-base md:text-sm text-foreground transition-all outline-none hover:border-primary/40 hover:bg-card/80 focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-primary/20',
           !date && 'text-muted-foreground',
           className,
         )}
