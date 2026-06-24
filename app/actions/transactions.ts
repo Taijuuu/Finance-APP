@@ -27,6 +27,7 @@ export async function getTransactions(params: {
     .from('transactions')
     .select('*, categories(id, name, icon_name, color)', { count: 'exact' })
     .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
   if (month) {
     const [year, m] = month.split('-').map(Number)
     const start = new Date(year, m - 1, 1).toISOString().split('T')[0]
@@ -59,6 +60,7 @@ export async function getTransactionsSummary(params: {
     .from('transactions')
     .select('amount, type, is_pointed')
     .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
   if (month) {
     const [year, m] = month.split('-').map(Number)
     const start = new Date(year, m - 1, 1).toISOString().split('T')[0]
@@ -88,6 +90,7 @@ export async function getUnpointedExpenseCount() {
     .from('transactions')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
     .eq('type', 'expense')
     .eq('is_pointed', false)
   return count ?? 0
@@ -103,7 +106,9 @@ export async function pointAllExpenses(params: { month?: string; category_id?: s
   let query = supabase
     .from('transactions')
     .update({ is_pointed: true })
-    .eq('user_id', user.id)    .eq('type', 'expense')
+    .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
+    .eq('type', 'expense')
     .eq('is_pointed', false)
 
   if (month) {
@@ -132,7 +137,9 @@ export async function unpointAllExpenses(params: { month?: string; category_id?:
   let query = supabase
     .from('transactions')
     .update({ is_pointed: false })
-    .eq('user_id', user.id)    .eq('type', 'expense')
+    .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
+    .eq('type', 'expense')
     .eq('is_pointed', true)
 
   if (month) {

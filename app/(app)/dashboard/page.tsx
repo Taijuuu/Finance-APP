@@ -39,13 +39,13 @@ async function getDashboardData(year: number, month: number) {
   const { start: bulkStart } = getMonthRange(rangeStart.getFullYear(), rangeStart.getMonth() + 1)
 
   // 5 parallel queries instead of 24
-  type TxRow = { amount: number; type: string; category_id: string | null; date: string; is_pointed: boolean }
+  type TxRow = { amount: number; type: string; category_id: string | null; date: string; is_pointed: boolean; is_recurring_instance: boolean }
   type CatRow = { amount: number; categories: { name: string; color: string | null } | null }
   type RecentRow = { id: string; amount: number; type: string; description: string | null; date: string; category_id: string | null; categories: { id: string; name: string; icon_name: string | null; color: string | null } | null }
   type BudgetRow = { category_id: string; amount: number; categories: { name: string } | null }
 
   const [{ data: bulkRaw }, { data: catDataRaw }, { data: recentRaw }, { data: budgetsRaw }, { data: profileRaw }] = await Promise.all([
-    supabase.from('transactions').select('amount, type, category_id, date, is_pointed').eq('user_id', user.id).gte('date', bulkStart).lte('date', end),
+    supabase.from('transactions').select('amount, type, category_id, date, is_pointed, is_recurring_instance').eq('user_id', user.id).gte('date', bulkStart).lte('date', end),
     supabase.from('transactions').select('amount, categories(name, color)').eq('user_id', user.id).eq('type', 'expense').gte('date', start).lte('date', end),
     supabase.from('transactions').select('*, categories(id, name, icon_name, color)').eq('user_id', user.id).gte('date', start).lte('date', end).order('date', { ascending: false }).limit(5),
     supabase.from('budgets').select('category_id, amount, categories(name)').eq('user_id', user.id).eq('month', month).eq('year', year),
@@ -70,7 +70,12 @@ async function getDashboardData(year: number, month: number) {
   const expenses = currentMonth.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
   const prevIncome = prevMonth.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const prevExpenses = prevMonth.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-  const pointedExpenses = currentMonth.filter(t => t.type === 'expense' && t.is_pointed).reduce((s, t) => s + Number(t.amount), 0)
+  // A month's expense counts as "debited" when:
+  //  - recurring: its date has passed (auto-debited, no manual pointing), or
+  //  - manual: the user has pointed it.
+  const todayStr = new Date().toISOString().split('T')[0]
+  const isExpenseDebited = (t: TxRow) => t.type === 'expense' && (t.is_recurring_instance ? t.date <= todayStr : t.is_pointed)
+  const pointedExpenses = currentMonth.filter(isExpenseDebited).reduce((s, t) => s + Number(t.amount), 0)
   const unpointedExpenses = expenses - pointedExpenses
 
   // Bar chart: last 6 months aggregated from bulk

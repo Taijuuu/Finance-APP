@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Circle, CheckCircle2, ListChecks, RefreshCw } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Circle, CheckCircle2, ListChecks } from 'lucide-react'
 import { deleteTransaction, deleteAllTransactions, setTransactionPointed, pointAllExpenses, unpointAllExpenses } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
@@ -375,40 +375,31 @@ export function TransactionListClient({ transactions, categories, totalCount, su
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{t.description || t.categories?.name || '—'}</p>
-                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                    {t.is_recurring_instance && <RefreshCw size={11} className="shrink-0 text-primary/70" aria-label="Récurrent" />}
-                    {formatDate(t.date)} · {t.categories?.name}
-                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{formatDate(t.date)} · {t.categories?.name}</p>
                 </div>
                 <span className={`text-sm font-semibold shrink-0 whitespace-nowrap ${t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                   {t.type === 'income' ? '+' : '-'}{formatCurrency(Number(t.amount))}
                 </span>
-                {t.is_recurring_instance ? (
-                  <span className="hidden sm:inline text-[10px] font-medium text-primary/70 shrink-0 uppercase tracking-wide">Récurrent</span>
-                ) : (
-                  <>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openEdit(t)}>
-                      <Pencil size={13} />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger
-                        render={<Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" />}
-                      >
-                        <Trash2 size={13} />
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer la transaction ?</AlertDialogTitle>
-                          <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(t.id)}>Supprimer</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </>
-                )}
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openEdit(t)}>
+                  <Pencil size={13} />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={<Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" />}
+                  >
+                    <Trash2 size={13} />
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Supprimer la transaction ?</AlertDialogTitle>
+                      <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(t.id)}>Supprimer</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             ))}
           </div>
