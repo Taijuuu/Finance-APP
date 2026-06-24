@@ -22,7 +22,7 @@ const toolsNav = [
   { href: '/export', label: 'Export', icon: Download },
 ]
 
-function NavLink({ href, label, icon: Icon, onNavigate }: { href: string; label: string; icon: ElementType; onNavigate?: () => void }) {
+function NavLink({ href, label, icon: Icon, onNavigate, badge }: { href: string; label: string; icon: ElementType; onNavigate?: () => void; badge?: number }) {
   const pathname = usePathname()
   const active = pathname === href || pathname.startsWith(href + '/')
   return (
@@ -37,12 +37,17 @@ function NavLink({ href, label, icon: Icon, onNavigate }: { href: string; label:
     >
       <Icon size={16} />
       {label}
+      {badge ? (
+        <span className="ml-auto inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : null}
     </Link>
   )
 }
 
 /** Full menu content shared by the desktop sidebar and the mobile drawer. */
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarNav({ onNavigate, transactionsBadge = 0 }: { onNavigate?: () => void; transactionsBadge?: number }) {
   const { theme, setTheme } = useTheme()
   return (
     <div className="flex flex-col h-full">
@@ -50,7 +55,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <Link href="/dashboard" onClick={onNavigate} className="text-sm font-bold tracking-widest uppercase text-foreground hover:text-primary transition-colors">FinanceApp</Link>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {primaryNav.map(item => <NavLink key={item.href} {...item} onNavigate={onNavigate} />)}
+        {primaryNav.map(item => <NavLink key={item.href} {...item} onNavigate={onNavigate} badge={item.href === '/transactions' ? transactionsBadge : undefined} />)}
         <div className="pt-4">
           <p className="px-3 mb-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 font-medium">Outils</p>
           {toolsNav.map(item => <NavLink key={item.href} {...item} onNavigate={onNavigate} />)}
@@ -78,10 +83,10 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ transactionsBadge = 0 }: { transactionsBadge?: number }) {
   return (
     <aside className="hidden md:flex flex-col w-56 border-r bg-background h-screen fixed left-0 top-0 z-40">
-      <SidebarNav />
+      <SidebarNav transactionsBadge={transactionsBadge} />
     </aside>
   )
 }

@@ -4,9 +4,9 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; full_name: string | null; currency: string; reconcile_expenses: boolean; created_at: string }
-        Insert: { id: string; full_name?: string | null; currency?: string; reconcile_expenses?: boolean }
-        Update: { full_name?: string | null; currency?: string; reconcile_expenses?: boolean }
+        Row: { id: string; full_name: string | null; currency: string; reconcile_expenses: boolean; monthly_savings_goal: number; created_at: string }
+        Insert: { id: string; full_name?: string | null; currency?: string; reconcile_expenses?: boolean; monthly_savings_goal?: number }
+        Update: { full_name?: string | null; currency?: string; reconcile_expenses?: boolean; monthly_savings_goal?: number }
         Relationships: []
       }
       categories: {

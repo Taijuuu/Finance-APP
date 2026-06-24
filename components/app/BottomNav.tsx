@@ -13,7 +13,7 @@ const items = [
   { href: '/profile', label: 'Profil', icon: User },
 ]
 
-export function BottomNav() {
+export function BottomNav({ transactionsBadge = 0 }: { transactionsBadge?: number }) {
   const pathname = usePathname()
   return (
     <nav
@@ -22,6 +22,7 @@ export function BottomNav() {
     >
       {items.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(href + '/')
+        const badge = href === '/transactions' ? transactionsBadge : 0
         return (
           <Link
             key={href}
@@ -32,7 +33,14 @@ export function BottomNav() {
               active ? 'text-primary' : 'text-muted-foreground'
             )}
           >
-            <Icon size={20} className="shrink-0" />
+            <span className="relative shrink-0">
+              <Icon size={20} className="shrink-0" />
+              {badge > 0 && (
+                <span className="absolute -top-1.5 -right-2 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground leading-none">
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
+            </span>
             <span className="max-w-full truncate leading-tight">{label}</span>
           </Link>
         )

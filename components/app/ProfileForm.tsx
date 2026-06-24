@@ -22,7 +22,7 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
     e.preventDefault()
     setSaving(true)
     const fd = new FormData(e.currentTarget)
-    const result = await updateProfile({ full_name: fd.get('full_name'), currency: fd.get('currency'), reconcile_expenses: reconcile })
+    const result = await updateProfile({ full_name: fd.get('full_name'), currency: fd.get('currency'), reconcile_expenses: reconcile, monthly_savings_goal: fd.get('monthly_savings_goal') })
     setSaving(false)
     if (result.error) toast.error(result.error)
     else toast.success('Profil mis à jour')
@@ -42,6 +42,20 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
             <SelectContent>{CURRENCIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="monthly_savings_goal">Objectif d'épargne mensuel</Label>
+        <Input
+          id="monthly_savings_goal"
+          name="monthly_savings_goal"
+          type="number"
+          min="0"
+          step="10"
+          inputMode="decimal"
+          placeholder="0"
+          defaultValue={profile?.monthly_savings_goal ? String(profile.monthly_savings_goal) : ''}
+        />
+        <p className="text-xs text-muted-foreground">Montant que tu vises à mettre de côté chaque mois. Laisse à 0 pour désactiver. Suivi sur le Dashboard.</p>
       </div>
       <div className="flex items-start justify-between gap-4 rounded-xl border bg-card p-4">
         <div className="space-y-1">

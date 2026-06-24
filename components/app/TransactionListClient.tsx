@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Circle, CheckCircle2 } from 'lucide-react'
-import { deleteTransaction, deleteAllTransactions, setTransactionPointed } from '@/app/actions/transactions'
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Circle, CheckCircle2, ListChecks } from 'lucide-react'
+import { deleteTransaction, deleteAllTransactions, setTransactionPointed, pointAllExpenses } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
 import { AnimatedCurrency } from './AnimatedCurrency'
@@ -38,6 +38,24 @@ export function TransactionListClient({ transactions, categories, totalCount, su
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [pointedOverrides, setPointedOverrides] = useState<Record<string, boolean>>({})
+  const [pointingAll, setPointingAll] = useState(false)
+
+  async function handlePointAll() {
+    setPointingAll(true)
+    try {
+      const result = await pointAllExpenses({ month: searchParams.month, category_id: searchParams.category, q: searchParams.q })
+      if (result.error) toast.error(result.error)
+      else {
+        setPointedOverrides({})
+        toast.success('Dépenses marquées comme débitées')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Une erreur inattendue est survenue.')
+    } finally {
+      setPointingAll(false)
+    }
+  }
 
   async function handleTogglePointed(t: Transaction) {
     const next = !(pointedOverrides[t.id] ?? t.is_pointed)
@@ -249,6 +267,34 @@ export function TransactionListClient({ transactions, categories, totalCount, su
               </button>
             )
           })}
+          {summary.unpointedCount > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={<Button variant="outline" size="sm" disabled={pointingAll} className="ml-auto text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600" />}
+              >
+                <ListChecks size={14} className="sm:mr-1.5" />
+                <span className="hidden sm:inline">{pointingAll ? 'Traitement…' : 'Tout débiter'}</span>
+                <span className="sm:hidden">{pointingAll ? '…' : `Tout (${summary.unpointedCount})`}</span>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Marquer toutes les dépenses comme débitées ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {summary.unpointedCount} dépense{summary.unpointedCount > 1 ? 's' : ''} en attente (selon les filtres actuels) {summary.unpointedCount > 1 ? 'seront marquées' : 'sera marquée'} comme débitée{summary.unpointedCount > 1 ? 's' : ''}, pour un total de {formatCurrency(summary.unpointedExpenses)}. Tu pourras toujours les décocher une par une.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-emerald-600 text-white hover:bg-emerald-600/90"
+                    onClick={handlePointAll}
+                  >
+                    Tout débiter
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       )}
 

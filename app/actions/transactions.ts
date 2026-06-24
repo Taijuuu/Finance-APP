@@ -84,6 +84,56 @@ export async function getTransactionsSummary(params: {
   return { income, expenses, pointedExpenses, unpointedExpenses, unpointedCount, count: rows.length }
 }
 
+export async function getUnpointedExpenseCount() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return 0
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+  const { count } = await supabase
+    .from('transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
+    .eq('type', 'expense')
+    .eq('is_pointed', false)
+    .gte('date', start)
+    .lte('date', end)
+  return count ?? 0
+}
+
+export async function pointAllExpenses(params: { month?: string; category_id?: string; q?: string }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const { month, category_id, q } = params
+
+  let query = supabase
+    .from('transactions')
+    .update({ is_pointed: true })
+    .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
+    .eq('type', 'expense')
+    .eq('is_pointed', false)
+
+  if (month) {
+    const [year, m] = month.split('-').map(Number)
+    const start = new Date(year, m - 1, 1).toISOString().split('T')[0]
+    const end = new Date(year, m, 0).toISOString().split('T')[0]
+    query = query.gte('date', start).lte('date', end)
+  }
+  if (category_id) query = query.eq('category_id', category_id)
+  if (q) query = query.ilike('description', `%${q}%`)
+
+  const { error } = await query
+  if (error) return { error: error.message }
+  revalidatePath('/transactions')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
 export async function setTransactionPointed(id: string, pointed: boolean) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { SidebarNav } from './Sidebar'
 
-export function MobileMenu() {
+export function MobileMenu({ transactionsBadge = 0 }: { transactionsBadge?: number }) {
   const [open, setOpen] = useState(false)
   return (
     <header
@@ -20,7 +20,7 @@ export function MobileMenu() {
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0">
           <SheetTitle className="sr-only">Menu</SheetTitle>
-          <SidebarNav onNavigate={() => setOpen(false)} />
+          <SidebarNav onNavigate={() => setOpen(false)} transactionsBadge={transactionsBadge} />
         </SheetContent>
       </Sheet>
       <Link href="/dashboard" className="text-sm font-bold tracking-widest uppercase text-foreground">
