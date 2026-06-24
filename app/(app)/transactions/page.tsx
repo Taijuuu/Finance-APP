@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getTransactions, getTransactionsSummary } from '@/app/actions/transactions'
 import { getCategories } from '@/app/actions/categories'
+import { getProfile } from '@/app/actions/profile'
 import { TransactionListClient } from '@/components/app/TransactionListClient'
 import { TransactionRowSkeleton } from '@/components/app/Skeletons'
 
@@ -10,7 +11,7 @@ interface Props {
 
 export default async function TransactionsPage({ searchParams }: Props) {
   const params = await searchParams
-  const [{ data: transactions, count }, summary, categories] = await Promise.all([
+  const [{ data: transactions, count }, summary, categories, profile] = await Promise.all([
     getTransactions({
       month: params.month,
       type: params.type as 'expense' | 'income' | undefined,
@@ -27,6 +28,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
       q: params.q,
     }),
     getCategories(),
+    getProfile(),
   ])
 
   return (
@@ -37,6 +39,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
           categories={categories}
           totalCount={count}
           summary={summary}
+          reconcileEnabled={profile?.reconcile_expenses ?? false}
           currentPage={params.page ? Number(params.page) : 1}
           searchParams={params}
         />

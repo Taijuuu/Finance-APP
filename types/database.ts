@@ -4,9 +4,9 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; full_name: string | null; currency: string; created_at: string }
-        Insert: { id: string; full_name?: string | null; currency?: string }
-        Update: { full_name?: string | null; currency?: string }
+        Row: { id: string; full_name: string | null; currency: string; reconcile_expenses: boolean; created_at: string }
+        Insert: { id: string; full_name?: string | null; currency?: string; reconcile_expenses?: boolean }
+        Update: { full_name?: string | null; currency?: string; reconcile_expenses?: boolean }
         Relationships: []
       }
       categories: {
@@ -16,9 +16,9 @@ export interface Database {
         Relationships: []
       }
       transactions: {
-        Row: { id: string; user_id: string; amount: number; type: 'expense' | 'income'; category_id: string | null; description: string | null; date: string; is_recurring_instance: boolean; recurring_id: string | null; created_at: string }
-        Insert: { user_id: string; amount: number; type: 'expense' | 'income'; category_id?: string | null; description?: string | null; date: string; is_recurring_instance?: boolean; recurring_id?: string | null }
-        Update: { amount?: number; type?: 'expense' | 'income'; category_id?: string | null; description?: string | null; date?: string }
+        Row: { id: string; user_id: string; amount: number; type: 'expense' | 'income'; category_id: string | null; description: string | null; date: string; is_recurring_instance: boolean; recurring_id: string | null; is_pointed: boolean; created_at: string }
+        Insert: { user_id: string; amount: number; type: 'expense' | 'income'; category_id?: string | null; description?: string | null; date: string; is_recurring_instance?: boolean; recurring_id?: string | null; is_pointed?: boolean }
+        Update: { amount?: number; type?: 'expense' | 'income'; category_id?: string | null; description?: string | null; date?: string; is_pointed?: boolean }
         Relationships: []
       }
       recurring_transactions: {

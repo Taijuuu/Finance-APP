@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
-import { deleteTransaction, deleteAllTransactions } from '@/app/actions/transactions'
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Circle, CheckCircle2 } from 'lucide-react'
+import { deleteTransaction, deleteAllTransactions, setTransactionPointed } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
 import { Button } from '@/components/ui/button'
@@ -25,16 +25,35 @@ interface Props {
   transactions: Transaction[]
   categories: Category[]
   totalCount: number
-  summary: { income: number; expenses: number; count: number }
+  summary: { income: number; expenses: number; pointedExpenses: number; count: number }
+  reconcileEnabled: boolean
   currentPage: number
   searchParams: Record<string, string | undefined>
 }
 
-export function TransactionListClient({ transactions, categories, totalCount, summary, currentPage, searchParams }: Props) {
+export function TransactionListClient({ transactions, categories, totalCount, summary, reconcileEnabled, currentPage, searchParams }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
+  const [pointedOverrides, setPointedOverrides] = useState<Record<string, boolean>>({})
+
+  async function handleTogglePointed(t: Transaction) {
+    const next = !(pointedOverrides[t.id] ?? t.is_pointed)
+    setPointedOverrides(prev => ({ ...prev, [t.id]: next }))
+    try {
+      const result = await setTransactionPointed(t.id, next)
+      if (result.error) {
+        setPointedOverrides(prev => ({ ...prev, [t.id]: !next }))
+        toast.error(result.error)
+      } else {
+        router.refresh()
+      }
+    } catch {
+      setPointedOverrides(prev => ({ ...prev, [t.id]: !next }))
+      toast.error('Une erreur inattendue est survenue.')
+    }
+  }
   const pageSize = 20
   const totalPages = Math.ceil(totalCount / pageSize)
 
@@ -122,6 +141,11 @@ export function TransactionListClient({ transactions, categories, totalCount, su
           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
           <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Total dépenses</p>
           <p className="text-base sm:text-xl font-bold text-rose-500 truncate">{formatCurrency(summary.expenses)}</p>
+          {reconcileEnabled && (
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">
+              Déjà débité : <span className="font-semibold text-foreground">{formatCurrency(summary.pointedExpenses)}</span>
+            </p>
+          )}
         </div>
         <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
@@ -196,6 +220,21 @@ export function TransactionListClient({ transactions, categories, totalCount, su
           <div className="divide-y">
             {transactions.map(t => (
               <div key={t.id} className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 hover:bg-muted/30 transition-colors">
+                {reconcileEnabled && t.type === 'expense' && (() => {
+                  const pointed = pointedOverrides[t.id] ?? t.is_pointed
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePointed(t)}
+                      className={`shrink-0 rounded-full transition-colors ${pointed ? 'text-emerald-500' : 'text-muted-foreground/50 hover:text-muted-foreground'}`}
+                      aria-label={pointed ? 'Marquer comme non débitée' : 'Marquer comme débitée'}
+                      aria-pressed={pointed}
+                      title={pointed ? 'Débitée' : 'Pointer cette dépense'}
+                    >
+                      {pointed ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                    </button>
+                  )
+                })()}
                 {t.categories && (
                   <CategoryBadge name="" iconName={t.categories.icon_name} color={t.categories.color} size="sm" />
                 )}

@@ -50,13 +50,13 @@ export async function getTransactionsSummary(params: {
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { income: 0, expenses: 0, count: 0 }
+  if (!user) return { income: 0, expenses: 0, pointedExpenses: 0, count: 0 }
 
   const { month, type, category_id, q } = params
 
   let query = supabase
     .from('transactions')
-    .select('amount, type')
+    .select('amount, type, is_pointed')
     .eq('user_id', user.id)
     .eq('is_recurring_instance', false)
 
@@ -74,7 +74,18 @@ export async function getTransactionsSummary(params: {
   const rows = data ?? []
   const income = rows.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const expenses = rows.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-  return { income, expenses, count: rows.length }
+  const pointedExpenses = rows.filter(t => t.type === 'expense' && t.is_pointed).reduce((s, t) => s + Number(t.amount), 0)
+  return { income, expenses, pointedExpenses, count: rows.length }
+}
+
+export async function setTransactionPointed(id: string, pointed: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+  const { error } = await supabase.from('transactions').update({ is_pointed: pointed }).eq('id', id).eq('user_id', user.id)
+  if (error) return { error: error.message }
+  revalidatePath('/transactions')
+  return { success: true }
 }
 
 export async function createTransaction(input: unknown) {

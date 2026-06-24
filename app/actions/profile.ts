@@ -7,6 +7,7 @@ import { z } from 'zod'
 const profileSchema = z.object({
   full_name: z.string().min(1).max(100),
   currency: z.string().length(3),
+  reconcile_expenses: z.boolean().optional().default(false),
 })
 
 export async function getProfile() {
@@ -23,8 +24,9 @@ export async function updateProfile(input: unknown) {
   if (!user) return { error: 'Non authentifié' }
   const parsed = profileSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
-  const { error } = await supabase.from('profiles').update({ full_name: parsed.data.full_name, currency: parsed.data.currency }).eq('id', user.id)
+  const { error } = await supabase.from('profiles').update({ full_name: parsed.data.full_name, currency: parsed.data.currency, reconcile_expenses: parsed.data.reconcile_expenses }).eq('id', user.id)
   if (error) return { error: error.message }
   revalidatePath('/profile')
+  revalidatePath('/transactions')
   return { success: true }
 }
