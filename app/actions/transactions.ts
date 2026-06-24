@@ -9,6 +9,7 @@ export async function getTransactions(params: {
   type?: 'expense' | 'income'
   category_id?: string
   q?: string
+  pointed?: 'yes' | 'no'
   sort?: string
   order?: 'asc' | 'desc'
   page?: number
@@ -17,7 +18,7 @@ export async function getTransactions(params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { data: [], count: 0 }
 
-  const { month, type, category_id, q, sort = 'date', order = 'desc', page = 1 } = params
+  const { month, type, category_id, q, pointed, sort = 'date', order = 'desc', page = 1 } = params
   const pageSize = 20
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
@@ -37,6 +38,8 @@ export async function getTransactions(params: {
   if (type) query = query.eq('type', type)
   if (category_id) query = query.eq('category_id', category_id)
   if (q) query = query.ilike('description', `%${q}%`)
+  if (pointed === 'yes') query = query.eq('type', 'expense').eq('is_pointed', true)
+  if (pointed === 'no') query = query.eq('type', 'expense').eq('is_pointed', false)
 
   const { data, count } = await query.order(sort, { ascending: order === 'asc' }).range(from, to)
   return { data: data ?? [], count: count ?? 0 }
@@ -50,7 +53,7 @@ export async function getTransactionsSummary(params: {
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { income: 0, expenses: 0, pointedExpenses: 0, count: 0 }
+  if (!user) return { income: 0, expenses: 0, pointedExpenses: 0, unpointedExpenses: 0, unpointedCount: 0, count: 0 }
 
   const { month, type, category_id, q } = params
 
@@ -72,10 +75,13 @@ export async function getTransactionsSummary(params: {
 
   const { data } = await query
   const rows = data ?? []
+  const expenseRows = rows.filter(t => t.type === 'expense')
   const income = rows.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
-  const expenses = rows.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-  const pointedExpenses = rows.filter(t => t.type === 'expense' && t.is_pointed).reduce((s, t) => s + Number(t.amount), 0)
-  return { income, expenses, pointedExpenses, count: rows.length }
+  const expenses = expenseRows.reduce((s, t) => s + Number(t.amount), 0)
+  const pointedExpenses = expenseRows.filter(t => t.is_pointed).reduce((s, t) => s + Number(t.amount), 0)
+  const unpointedExpenses = expenses - pointedExpenses
+  const unpointedCount = expenseRows.filter(t => !t.is_pointed).length
+  return { income, expenses, pointedExpenses, unpointedExpenses, unpointedCount, count: rows.length }
 }
 
 export async function setTransactionPointed(id: string, pointed: boolean) {

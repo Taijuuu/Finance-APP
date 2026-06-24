@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Circle, CheckCircle2 }
 import { deleteTransaction, deleteAllTransactions, setTransactionPointed } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
+import { AnimatedCurrency } from './AnimatedCurrency'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -25,7 +26,7 @@ interface Props {
   transactions: Transaction[]
   categories: Category[]
   totalCount: number
-  summary: { income: number; expenses: number; pointedExpenses: number; count: number }
+  summary: { income: number; expenses: number; pointedExpenses: number; unpointedExpenses: number; unpointedCount: number; count: number }
   reconcileEnabled: boolean
   currentPage: number
   searchParams: Record<string, string | undefined>
@@ -140,24 +141,40 @@ export function TransactionListClient({ transactions, categories, totalCount, su
         <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
           <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Total dépenses</p>
-          <p className="text-base sm:text-xl font-bold text-rose-500 truncate">{formatCurrency(summary.expenses)}</p>
-          {reconcileEnabled && (
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">
-              Déjà débité : <span className="font-semibold text-foreground">{formatCurrency(summary.pointedExpenses)}</span>
-            </p>
-          )}
+          <AnimatedCurrency value={summary.expenses} className="text-base sm:text-xl font-bold text-rose-500 truncate block" />
         </div>
         <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
           <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Total revenus</p>
-          <p className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate">{formatCurrency(summary.income)}</p>
+          <AnimatedCurrency value={summary.income} className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate block" />
         </div>
         <div className="rounded-xl border bg-card p-3 sm:p-4 overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
           <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-1">Solde</p>
-          <p className={`text-base sm:text-xl font-bold truncate ${summary.income - summary.expenses >= 0 ? 'text-foreground' : 'text-rose-500'}`}>{formatCurrency(summary.income - summary.expenses)}</p>
+          <AnimatedCurrency value={summary.income - summary.expenses} className={`text-base sm:text-xl font-bold truncate block ${summary.income - summary.expenses >= 0 ? 'text-foreground' : 'text-rose-500'}`} />
         </div>
       </div>
+
+      {reconcileEnabled && (
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4">
+          <div className="rounded-xl border bg-card p-3 sm:p-4 flex items-center gap-2.5 overflow-hidden">
+            <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide truncate">Déjà débité</p>
+              <AnimatedCurrency value={summary.pointedExpenses} className="text-sm sm:text-lg font-bold text-foreground truncate block" />
+            </div>
+          </div>
+          <div className="rounded-xl border bg-card p-3 sm:p-4 flex items-center gap-2.5 overflow-hidden">
+            <Circle size={18} className="text-muted-foreground/60 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide truncate">
+                Reste à débiter{summary.unpointedCount ? ` (${summary.unpointedCount})` : ''}
+              </p>
+              <AnimatedCurrency value={summary.unpointedExpenses} className="text-sm sm:text-lg font-bold text-foreground truncate block" />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 mb-4">
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -213,6 +230,28 @@ export function TransactionListClient({ transactions, categories, totalCount, su
         </div>
       </div>
 
+      {reconcileEnabled && (
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          {([
+            { key: undefined, label: 'Toutes' },
+            { key: 'no', label: `À débiter${summary.unpointedCount ? ` (${summary.unpointedCount})` : ''}` },
+            { key: 'yes', label: 'Débitées' },
+          ] as const).map(chip => {
+            const active = (searchParams.pointed ?? undefined) === chip.key
+            return (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => setParam('pointed', chip.key)}
+                className={`rounded-full border px-3.5 py-1.5 text-xs sm:text-[0.8rem] font-medium transition-colors ${active ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted/50 active:bg-muted'}`}
+              >
+                {chip.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       <div className="rounded-xl border overflow-hidden">
         {transactions.length === 0 ? (
           <p className="text-center text-muted-foreground py-12 text-sm">Aucune transaction trouvée</p>
@@ -226,12 +265,12 @@ export function TransactionListClient({ transactions, categories, totalCount, su
                     <button
                       type="button"
                       onClick={() => handleTogglePointed(t)}
-                      className={`shrink-0 rounded-full transition-colors ${pointed ? 'text-emerald-500' : 'text-muted-foreground/50 hover:text-muted-foreground'}`}
+                      className={`-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${pointed ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-muted-foreground/50 hover:bg-muted hover:text-muted-foreground'}`}
                       aria-label={pointed ? 'Marquer comme non débitée' : 'Marquer comme débitée'}
                       aria-pressed={pointed}
                       title={pointed ? 'Débitée' : 'Pointer cette dépense'}
                     >
-                      {pointed ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                      {pointed ? <CheckCircle2 size={19} /> : <Circle size={19} />}
                     </button>
                   )
                 })()}

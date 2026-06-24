@@ -6,7 +6,7 @@ import { TransactionListClient } from '@/components/app/TransactionListClient'
 import { TransactionRowSkeleton } from '@/components/app/Skeletons'
 
 interface Props {
-  searchParams: Promise<{ month?: string; type?: string; category?: string; q?: string; page?: string; sort?: string; order?: string }>
+  searchParams: Promise<{ month?: string; type?: string; category?: string; q?: string; pointed?: string; page?: string; sort?: string; order?: string }>
 }
 
 export default async function TransactionsPage({ searchParams }: Props) {
@@ -17,6 +17,7 @@ export default async function TransactionsPage({ searchParams }: Props) {
       type: params.type as 'expense' | 'income' | undefined,
       category_id: params.category,
       q: params.q,
+      pointed: params.pointed as 'yes' | 'no' | undefined,
       sort: params.sort,
       order: params.order as 'asc' | 'desc' | undefined,
       page: params.page ? Number(params.page) : 1,
