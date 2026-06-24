@@ -134,6 +134,37 @@ export async function pointAllExpenses(params: { month?: string; category_id?: s
   return { success: true }
 }
 
+export async function unpointAllExpenses(params: { month?: string; category_id?: string; q?: string }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non authentifié' }
+
+  const { month, category_id, q } = params
+
+  let query = supabase
+    .from('transactions')
+    .update({ is_pointed: false })
+    .eq('user_id', user.id)
+    .eq('is_recurring_instance', false)
+    .eq('type', 'expense')
+    .eq('is_pointed', true)
+
+  if (month) {
+    const [year, m] = month.split('-').map(Number)
+    const start = new Date(year, m - 1, 1).toISOString().split('T')[0]
+    const end = new Date(year, m, 0).toISOString().split('T')[0]
+    query = query.gte('date', start).lte('date', end)
+  }
+  if (category_id) query = query.eq('category_id', category_id)
+  if (q) query = query.ilike('description', `%${q}%`)
+
+  const { error } = await query
+  if (error) return { error: error.message }
+  revalidatePath('/transactions')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
 export async function setTransactionPointed(id: string, pointed: boolean) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

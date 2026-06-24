@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Circle, CheckCircle2, ListChecks } from 'lucide-react'
-import { deleteTransaction, deleteAllTransactions, setTransactionPointed, pointAllExpenses } from '@/app/actions/transactions'
+import { deleteTransaction, deleteAllTransactions, setTransactionPointed, pointAllExpenses, unpointAllExpenses } from '@/app/actions/transactions'
 import { TransactionForm } from './TransactionForm'
 import { CategoryBadge } from './CategoryBadge'
 import { AnimatedCurrency } from './AnimatedCurrency'
@@ -48,7 +48,28 @@ export function TransactionListClient({ transactions, categories, totalCount, su
       else {
         setPointedOverrides({})
         toast.success('Dépenses marquées comme débitées')
-        router.refresh()
+        // Stay on a view where the rows remain visible & editable. If the user
+        // was filtering "À débiter", that list is now empty — switch to "Toutes".
+        if (searchParams.pointed === 'no') setParam('pointed', undefined)
+        else router.refresh()
+      }
+    } catch {
+      toast.error('Une erreur inattendue est survenue.')
+    } finally {
+      setPointingAll(false)
+    }
+  }
+
+  async function handleUnpointAll() {
+    setPointingAll(true)
+    try {
+      const result = await unpointAllExpenses({ month: searchParams.month, category_id: searchParams.category, q: searchParams.q })
+      if (result.error) toast.error(result.error)
+      else {
+        setPointedOverrides({})
+        toast.success('Pointage annulé')
+        if (searchParams.pointed === 'yes') setParam('pointed', undefined)
+        else router.refresh()
       }
     } catch {
       toast.error('Une erreur inattendue est survenue.')
@@ -291,6 +312,29 @@ export function TransactionListClient({ transactions, categories, totalCount, su
                   >
                     Tout débiter
                   </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {summary.unpointedCount === 0 && summary.pointedExpenses > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={<Button variant="outline" size="sm" disabled={pointingAll} className="ml-auto text-muted-foreground" />}
+              >
+                <Circle size={14} className="sm:mr-1.5" />
+                <span className="hidden sm:inline">{pointingAll ? 'Traitement…' : 'Tout annuler'}</span>
+                <span className="sm:hidden">{pointingAll ? '…' : 'Annuler'}</span>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Annuler le pointage de toutes les dépenses ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Toutes les dépenses débitées (selon les filtres actuels) seront remises en attente de débit. Tu pourras les re-cocher individuellement ou via « Tout débiter ».
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleUnpointAll}>Tout remettre en attente</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
