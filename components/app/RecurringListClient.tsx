@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { computeMissingOccurrences } from '@/lib/recurring-engine'
 import type { Database } from '@/types/database'
 
@@ -22,6 +22,7 @@ type Category = Database['public']['Tables']['categories']['Row']
 
 const FREQ_LABELS: Record<string, string> = { weekly: 'Hebdo', monthly: 'Mensuel', yearly: 'Annuel' }
 
+/** Next real debit date (strictly after today), formatted DD/MM/YYYY, or '—'. */
 function nextOccurrence(r: Recurring): string {
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
@@ -29,7 +30,8 @@ function nextOccurrence(r: Recurring): string {
     { frequency: r.frequency, start_date: r.start_date, last_generated: null },
     new Date(today.getFullYear() + 2, 0, 1)
   )
-  return upcoming.find(d => d > todayStr) ?? '—'
+  const next = upcoming.find(d => d > todayStr)
+  return next ? formatDate(next) : '—'
 }
 
 function estimatedMonthly(recurrings: Recurring[]): number {

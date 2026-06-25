@@ -51,7 +51,13 @@ export function BalanceLineChart({ data }: { data: DataPoint[] }) {
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: textColor }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: textColor }} axisLine={false} tickLine={false} tickFormatter={v => `${v}€`} width={52} />
           <ReferenceLine y={0} stroke="rgba(108,99,255,0.35)" strokeDasharray="4 4" label={{ value: '0 €', fill: 'rgba(108,99,255,0.5)', fontSize: 10, position: 'insideTopLeft' }} />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(108,99,255,0.3)', strokeWidth: 1 }} />
+          <Tooltip
+            content={<CustomTooltip />}
+            cursor={{ stroke: 'rgba(108,99,255,0.3)', strokeWidth: 1 }}
+            position={{ y: 0 }}
+            allowEscapeViewBox={{ x: false, y: true }}
+            wrapperStyle={{ zIndex: 50, pointerEvents: 'none' }}
+          />
           <Area
             type="monotone"
             dataKey="solde"

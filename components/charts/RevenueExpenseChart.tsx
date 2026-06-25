@@ -46,7 +46,13 @@ export function RevenueExpenseChart({ data }: { data: DataPoint[] }) {
           </defs>
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: textColor }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: textColor }} axisLine={false} tickLine={false} tickFormatter={v => `${v}€`} width={52} />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)', radius: 4 }} />
+          <Tooltip
+            content={<CustomTooltip />}
+            cursor={{ fill: 'rgba(255,255,255,0.03)', radius: 4 }}
+            position={{ y: 0 }}
+            allowEscapeViewBox={{ x: false, y: true }}
+            wrapperStyle={{ zIndex: 50, pointerEvents: 'none' }}
+          />
           <Bar dataKey="revenus" fill="url(#gradRev)" radius={[4, 4, 0, 0]}>
             {data.map((_, i) => <Cell key={i} opacity={i === currentIdx ? 1 : 0.45} />)}
           </Bar>

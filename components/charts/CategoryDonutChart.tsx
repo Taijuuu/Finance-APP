@@ -35,7 +35,11 @@ export function CategoryDonutChart({ data }: { data: DataPoint[] }) {
                 <Pie data={enriched} cx="50%" cy="50%" innerRadius={58} outerRadius={82} dataKey="value" paddingAngle={2}>
                   {enriched.map((entry, i) => <Cell key={i} fill={entry.color ?? '#9CA3AF'} />)}
                 </Pie>
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  allowEscapeViewBox={{ x: true, y: true }}
+                  wrapperStyle={{ zIndex: 50, pointerEvents: 'none' }}
+                />
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
