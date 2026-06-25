@@ -34,6 +34,18 @@ export async function syncRecurring(supabase: SupabaseServer, userId: string, up
     await supabase.from('transactions').delete().eq('user_id', userId).in('id', orphanIds)
   }
 
+  // 1b. Remove any FUTURE-dated recurring instances. A recurring expense must only
+  // appear/count on its actual debit day, never before. Generation below is capped
+  // at today, so this only ever clears instances left over from earlier versions
+  // (or a wider horizon); they are regenerated when their date arrives.
+  const todayStr = new Date().toISOString().split('T')[0]
+  await supabase
+    .from('transactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('is_recurring_instance', true)
+    .gt('date', todayStr)
+
   // 2. Generate missing occurrences for active recurrings
   const recurrings = (templates && templates.length)
     ? (await supabase

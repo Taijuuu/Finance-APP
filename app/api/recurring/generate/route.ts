@@ -15,15 +15,15 @@ export async function POST() {
 
   if (!recurrings?.length) return NextResponse.json({ generated: 0 })
 
+  // Only ever materialise occurrences up to today — a recurring expense must not
+  // appear before its actual debit day. Never generate into the future.
   const today = new Date()
-  const horizon = new Date(today)
-  horizon.setMonth(horizon.getMonth() + 12)
   let totalGenerated = 0
 
   for (const r of recurrings) {
     const dates = computeMissingOccurrences(
       { frequency: r.frequency, start_date: r.start_date, last_generated: r.last_generated },
-      horizon
+      today
     )
     if (dates.length === 0) continue
 
