@@ -34,17 +34,30 @@ export async function syncRecurring(supabase: SupabaseServer, userId: string, up
     await supabase.from('transactions').delete().eq('user_id', userId).in('id', orphanIds)
   }
 
-  // 1b. Remove any FUTURE-dated recurring instances. A recurring expense must only
-  // appear/count on its actual debit day, never before. Generation below is capped
-  // at today, so this only ever clears instances left over from earlier versions
-  // (or a wider horizon); they are regenerated when their date arrives.
-  const todayStr = new Date().toISOString().split('T')[0]
+  // 1b. Remove FUTURE-dated recurring instances, per type:
+  // - expense: must only appear/count on its actual debit day, never before.
+  // - income: should already count from the 1st of its month, so it's only
+  //   "future" once it's past the current month (leftover from a wider horizon).
+  const now = new Date()
+  const todayStr = now.toISOString().split('T')[0]
+  // Built in UTC (not local midnight) so its ISO date string doesn't shift back
+  // a day for timezones ahead of UTC.
+  const currentMonthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0))
+  const currentMonthEndStr = currentMonthEnd.toISOString().split('T')[0]
   await supabase
     .from('transactions')
     .delete()
     .eq('user_id', userId)
     .eq('is_recurring_instance', true)
+    .eq('type', 'expense')
     .gt('date', todayStr)
+  await supabase
+    .from('transactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('is_recurring_instance', true)
+    .eq('type', 'income')
+    .gt('date', currentMonthEndStr)
 
   // 2. Generate missing occurrences for active recurrings
   const recurrings = (templates && templates.length)
@@ -58,10 +71,13 @@ export async function syncRecurring(supabase: SupabaseServer, userId: string, up
 
   await Promise.all(
     recurrings.map(async (r) => {
-      // Recompute from start_date (last_generated: null) to catch any gaps
+      // Recompute from start_date (last_generated: null) to catch any gaps.
+      // Income is materialised as soon as its month starts (cap = current month
+      // end), while expenses stay capped at `upTo` (never before their debit day).
+      const cap = r.type === 'income' && currentMonthEnd > upTo ? currentMonthEnd : upTo
       const all = computeMissingOccurrences(
         { frequency: r.frequency, start_date: r.start_date, last_generated: null },
-        upTo,
+        cap,
       )
       if (all.length === 0) return
       const { data: existing } = await supabase

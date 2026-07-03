@@ -39,7 +39,7 @@ function makeSupabase(tables: Record<string, unknown[]>) {
 }
 
 describe('syncRecurring', () => {
-  it('deletes future-dated recurring instances', async () => {
+  it('deletes future-dated expense instances capped at today', async () => {
     const { supabase, calls } = makeSupabase({
       recurring_transactions: [],
       transactions: [],
@@ -47,15 +47,63 @@ describe('syncRecurring', () => {
 
     await syncRecurring(supabase, 'user-1', new Date('2026-07-01'))
 
-    const futureDelete = calls.find(
+    const expenseDelete = calls.find(
       c =>
         c.table === 'transactions' &&
         c.op === 'delete' &&
         typeof c.args[0] === 'object' &&
         (c.args[0] as Record<string, unknown>)['eq:is_recurring_instance'] === true &&
+        (c.args[0] as Record<string, unknown>)['eq:type'] === 'expense' &&
         'gt:date' in (c.args[0] as Record<string, unknown>),
     )
-    expect(futureDelete).toBeTruthy()
+    expect(expenseDelete).toBeTruthy()
+  })
+
+  it('deletes future-dated income instances only past the current month end', async () => {
+    const { supabase, calls } = makeSupabase({
+      recurring_transactions: [],
+      transactions: [],
+    })
+
+    await syncRecurring(supabase, 'user-1', new Date('2026-07-01'))
+
+    const now = new Date()
+    const expectedMonthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0))
+      .toISOString()
+      .split('T')[0]
+
+    const incomeDelete = calls.find(
+      c =>
+        c.table === 'transactions' &&
+        c.op === 'delete' &&
+        typeof c.args[0] === 'object' &&
+        (c.args[0] as Record<string, unknown>)['eq:is_recurring_instance'] === true &&
+        (c.args[0] as Record<string, unknown>)['eq:type'] === 'income',
+    )
+    expect(incomeDelete).toBeTruthy()
+    expect((incomeDelete!.args[0] as Record<string, unknown>)['gt:date']).toBe(expectedMonthEnd)
+  })
+
+  it('generates a recurring income occurrence for later this month even before its day arrives', async () => {
+    const now = new Date()
+    const lateDayThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() // last day of month
+    // Only meaningful when today isn't already the last day of the month.
+    if (lateDayThisMonth === now.getDate()) return
+
+    const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lateDayThisMonth).padStart(2, '0')}`
+    const { supabase, calls } = makeSupabase({
+      recurring_transactions: [
+        { id: 'r1', user_id: 'user-1', is_active: true, type: 'income', frequency: 'monthly', start_date: startDate, amount: 1000, category_id: null, name: 'Salaire' },
+      ],
+      transactions: [],
+    })
+
+    await syncRecurring(supabase, 'user-1', now)
+
+    const insertCall = calls.find(c => c.table === 'transactions' && c.op === 'insert')
+    expect(insertCall).toBeTruthy()
+    const rows = insertCall!.args[0] as { date: string; type: string }[]
+    expect(rows.some(r => r.date === startDate && r.type === 'income')).toBe(true)
   })
 })
 

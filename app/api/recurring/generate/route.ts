@@ -15,15 +15,21 @@ export async function POST() {
 
   if (!recurrings?.length) return NextResponse.json({ generated: 0 })
 
-  // Only ever materialise occurrences up to today — a recurring expense must not
-  // appear before its actual debit day. Never generate into the future.
+  // A recurring expense must not appear before its actual debit day, so it's
+  // capped at today. A recurring income counts from the 1st of its month, so
+  // it's capped at the end of the current month instead. Never generate past
+  // the current month either way.
   const today = new Date()
+  // Built in UTC (not local midnight) so its ISO date string doesn't shift back
+  // a day for timezones ahead of UTC.
+  const currentMonthEnd = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0))
   let totalGenerated = 0
 
   for (const r of recurrings) {
+    const cap = r.type === 'income' ? currentMonthEnd : today
     const dates = computeMissingOccurrences(
       { frequency: r.frequency, start_date: r.start_date, last_generated: r.last_generated },
-      today
+      cap
     )
     if (dates.length === 0) continue
 
